@@ -625,7 +625,7 @@
 //[LIU0326] Request finished trip after click finish button
 - (NSInteger) requestFinishedTrips:(NSData *)responseData{
 	
-	NSInteger countNewTrips = 0;
+	NSInteger *countNewTrips = 0;
 	NSDictionary *readableJsonText = [NSJSONSerialization JSONObjectWithData:responseData options:0 error:nil];
 	//NSLog(@"Received Readable Json%@", readableJsonText);
 	NSError *errorJson=nil;
@@ -726,7 +726,6 @@
 	
 	
 	return countNewTrips;
-	//return 1;
 	
 }
 

@@ -39,6 +39,7 @@
 #define k10Minutes	600
 #define k5MInutes	300
 #define k60Minutes	3600
+#define k4Hours 14400
 #define kNumReminders 10
 
 //#define kEnableTestReminder		YES
@@ -57,11 +58,11 @@
 		
 		// add reminders here
 		if ( kEnableTestReminder )
-			[self addRemindersWithFirstFireInterval:120 interval:120];
+			[self addRemindersWithFirstFireInterval:k4Hours interval:k4Hours];
 		
 		//[LIU0314]
 		//[self addRemindersWithFirstFireInterval:k15Minutes interval:k5MInutes];
-		[self addRemindersWithFirstFireInterval:k60Minutes interval:k60Minutes];
+		[self addRemindersWithFirstFireInterval:k4Hours interval:k4Hours];
 	}
 	
 	return self;

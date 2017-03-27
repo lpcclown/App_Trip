@@ -493,6 +493,50 @@
 	}
 }
 
++ (NSArray *) obtainTripsArray:(NSInteger*) sendFlag{
+	
+	NSFetchRequest *request = [[NSFetchRequest alloc] init];
+	request.predicate = [NSPredicate predicateWithFormat:@"sendFlag == %@", @0];
+	FloridaTripTrackerAppDelegate *delegate= [[UIApplication sharedApplication] delegate];
+	NSManagedObjectContext *managedContext = [delegate managedObjectContext];
+	
+	//[LIU] Obtain coords info
+	NSEntityDescription *coordLocal = [NSEntityDescription entityForName:@"CoordLocal" inManagedObjectContext:managedContext];
+	[request setEntity:coordLocal];
+	NSInteger count = [managedContext countForFetchRequest:request error:nil];
+	NSLog(@"Saved coords count and going to send:  = %ld", count);
+	NSArray *coordInCoordLocal = [managedContext executeFetchRequest:request error:nil];
+	
+	//[LIU] Obtain user's device number in user table
+	NSEntityDescription *user = [NSEntityDescription entityForName:@"User" inManagedObjectContext:managedContext];
+	request.predicate = nil;
+	[request setEntity:user];
+	NSArray *userInUserTable = [managedContext executeFetchRequest:request error:nil];
+	User *person= [userInUserTable objectAtIndex:0];
+	NSString *deviceNum =person.deviceNum;
+	NSString *userID = person.userid;
+	
+	NSLog(@"Device number for sending coords: %@", deviceNum);
+	
+	NSDictionary *coordJson = nil;
+	NSMutableArray *coordsArray = [NSMutableArray array];
+	
+	//[LIU] Used to convert date format to string format to put in json
+	
+	NSDateFormatter *dateFormat = [[NSDateFormatter alloc] init];
+	[dateFormat setDateFormat:@"MM/dd/yyyy HH:mm:ss aaa"];
+	NSLocale *locale = [[NSLocale alloc] initWithLocaleIdentifier:@"en_US"];
+	[dateFormat setLocale:locale];
+	
+	for(CoordLocal *coordLocal in coordInCoordLocal){
+		
+		NSString *recorded = [dateFormat stringFromDate: coordLocal.recorded];
+		coordJson = [NSDictionary dictionaryWithObjectsAndKeys:recorded ,@"recorded",coordLocal.latitude,@"lat",coordLocal.longitude,@"lon",coordLocal.altitude,@"alt",coordLocal.speed,@"speed",coordLocal.hAccuracy,@"hAccuracy",coordLocal.vAccuracy,@"vAccuracy",deviceNum,@"device_id", userID, @"user_id", nil];
+		[coordsArray addObject:coordJson];
+	}
+
+	return coordsArray;
+}
 
 //[LIU] Handle finish button action
 - (IBAction)save:(UIButton *)sender
@@ -513,44 +557,31 @@
 	NSEntityDescription *coordLocal = [NSEntityDescription entityForName:@"CoordLocal" inManagedObjectContext:managedContext];
 	[request setEntity:coordLocal];
 	NSInteger count = [managedContext countForFetchRequest:request error:nil];
-	NSLog(@"Saved coords count and going to send:  = %ld", count);
+	NSLog(@"Total trips amount to be deleted  = %ld", count);
 	NSArray *coordInCoordLocal = [managedContext executeFetchRequest:request error:nil];
 	
-	//[LIU] Obtain user's device number in user table
-	NSEntityDescription *user = [NSEntityDescription entityForName:@"User" inManagedObjectContext:managedContext];
-	[request setEntity:user];
-	NSArray *userInUserTable = [managedContext executeFetchRequest:request error:nil];
-	User *person= [userInUserTable objectAtIndex:0];
-	NSString *deviceNum =person.deviceNum;
-	NSString *userID = person.userid;
+	NSArray *coordsArray = [RecordTripViewController obtainTripsArray:0];
 	
-	NSLog(@"Device number for sending coords: %@", deviceNum);
-	
-	NSDictionary *coordJson = nil;
-	NSMutableArray *coordsArray = [NSMutableArray array];
-	
-	//[LIU] Used to convert date format to string format to put in json
-
-	NSDateFormatter *dateFormat = [[NSDateFormatter alloc] init];
-	[dateFormat setDateFormat:@"MM/dd/yyyy HH:mm:ss aaa"];	
-	NSLocale *locale = [[NSLocale alloc] initWithLocaleIdentifier:@"en_US"];
-	[dateFormat setLocale:locale];
-	
-	for(CoordLocal *coordLocal in coordInCoordLocal){
-		
-		NSString *recorded = [dateFormat stringFromDate: coordLocal.recorded];
-		coordJson = [NSDictionary dictionaryWithObjectsAndKeys:recorded ,@"recorded",coordLocal.latitude,@"lat",coordLocal.longitude,@"lon",coordLocal.altitude,@"alt",coordLocal.speed,@"speed",coordLocal.hAccuracy,@"hAccuracy",coordLocal.vAccuracy,@"vAccuracy",deviceNum,@"device_id", userID, @"user_id", nil];
-		[coordsArray addObject:coordJson];
-	}
-	
-	//[LIU] send array dirrectly
-	NSData *responseData = [ServerInteract sendRequest:coordsArray toURLAddress:kUpdateCoorFull];
+	//[LIU] send array directly
+	NSData *responseData = [ServerInteract sendRequest:coordsArray toURLAddress:KFinishRecording];
 	if(responseData != nil){
-		NSDictionary *serverFeedback = [NSJSONSerialization JSONObjectWithData:responseData options:0 error:nil];
-		NSString *serverFeedbackString = [serverFeedback objectForKey:@"Result"];
+		
+		NSInteger tripsCount = [self requestFinishedTrips:responseData];
+		
+		NSArray *serverFeedback = [NSJSONSerialization JSONObjectWithData:responseData options:0 error:nil];
+		//NSString *serverFeedbackString = [serverFeedback objectForKey:@"Result"];
+		
+		UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"Confirmation"
+														message:[NSString stringWithFormat:@"%ld trips generated from server model.", (long)tripsCount]
+													   delegate:self
+											  cancelButtonTitle:@"OK"
+											  otherButtonTitles:nil];
+		[alert show];
+		
 		
 		//[LIU] According to server's feedback to decide if empty table
-		if ([serverFeedbackString hasSuffix:@"successfully."]) {
+		if (serverFeedback.count != 0) {
+			
 			for(CoordLocal *coordLocal in coordInCoordLocal){
 				[managedContext deleteObject:coordLocal];
 			}
@@ -559,31 +590,144 @@
 														   delegate:self
 												  cancelButtonTitle:@"OK"
 												  otherButtonTitles:nil];
-			[alert show];
+			//[LIU0326]
+			//[alert show];
 		}else{
 			UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"Confirmation"
 															message:[NSString stringWithFormat:@"Coordinates information failed to load to server."]
 														   delegate:self
 												  cancelButtonTitle:@"OK"
 												  otherButtonTitles:nil];
-			[alert show];
+			//[LIU0326]
+			//[alert show];
 			
 		}
+		
+
+
 	}else{
-			
-			UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"Confirmation"
-															message:[NSString stringWithFormat:@"Internet is not available, Coordinates information failed to load to server."]
-														   delegate:self
-												  cancelButtonTitle:@"OK"
-												  otherButtonTitles:nil];
-			[alert show];
-			
-		}
+		
+		UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"Confirmation"
+														message:[NSString stringWithFormat:@"Internet is not available, Coordinates information failed to load to server."]
+													   delegate:self
+											  cancelButtonTitle:@"OK"
+											  otherButtonTitles:nil];
+		[alert show];
+		
+	}
 	
 	//[LIU] Clear the time recording, need to check detail any impact
 	[self resetTimer];
 	[self resetCounter];
 	self.recording = NO;
+}
+
+//[LIU0326] Request finished trip after click finish button
+- (NSInteger) requestFinishedTrips:(NSData *)responseData{
+	
+	NSInteger countNewTrips = 0;
+	NSDictionary *readableJsonText = [NSJSONSerialization JSONObjectWithData:responseData options:0 error:nil];
+	//NSLog(@"Received Readable Json%@", readableJsonText);
+	NSError *errorJson=nil;
+	//NSInteger *countNewTrips = 0;
+	if (readableJsonText != nil){
+		NSArray *tripArray = [NSJSONSerialization JSONObjectWithData:responseData options:kNilOptions error:&errorJson];
+		
+		
+		countNewTrips = tripArray.count;
+		
+		//[LIU] Iterate trips in the feedback info
+		NSEnumerator *e = [tripArray objectEnumerator];
+		id object;
+		while (object = [e nextObject]) {
+			//[LIU] Create new managed objects for coord and trip
+			NSDictionary *singleTripInfo = object;
+			NSString *messageFeedback = [singleTripInfo objectForKey:@"Message"];
+			
+			if (messageFeedback != Nil && (NSNull *)messageFeedback != [NSNull null] && [messageFeedback rangeOfString:@"error"].length == 0 && [messageFeedback rangeOfString:@"No"].length == 0 && [messageFeedback rangeOfString:@"least" ].length == 0){
+				FloridaTripTrackerAppDelegate *appDelegate = (FloridaTripTrackerAppDelegate *)[[UIApplication sharedApplication]delegate];
+				NSManagedObjectContext *context = [appDelegate managedObjectContext];
+				
+				NSManagedObject *newTrip = [NSEntityDescription insertNewObjectForEntityForName:@"Trip" inManagedObjectContext:context];
+				NSDateFormatter *dateFormat = [[NSDateFormatter alloc] init];
+				[dateFormat setDateFormat:@"MM/dd/yyyy hh:mm:ss a"];
+				NSLocale *locale = [[NSLocale alloc] initWithLocaleIdentifier:@"en_US"];
+				[dateFormat setLocale:locale];
+				
+				
+				//[LIU] TODO: in original there is no column about "member details", might to add
+				[newTrip setValue:[singleTripInfo objectForKey:@"tripid"] forKey:@"sysTripID"];
+				//[newTrip setValue:[singleTripInfo objectForKey:@"tripid"] forKey:@"distance"];
+				//[newTrip setValue:[singleTripInfo objectForKey:@"tripid"] forKey:@"duration"];
+				[newTrip setValue:[singleTripInfo objectForKey:@"purpose"] forKey:@"purpose"];
+				[newTrip setValue:[dateFormat dateFromString:[singleTripInfo objectForKey:@"startTime"]] forKey:@"startTime"];
+				//[LIU] Based on the new logic, all trips are loaded from server, so we can set these tow columns as system date by default.
+				[newTrip setValue:[NSDate date] forKey:@"saved"];
+				[newTrip setValue:[NSDate date] forKey:@"uploaded"];
+				[newTrip setValue:[singleTripInfo objectForKey:@"fare"] forKey:@"fare"];
+				[newTrip setValue:[singleTripInfo objectForKey:@"delays"] forKey:@"delays"];
+				[newTrip setValue:[singleTripInfo objectForKey:@"members"] forKey:@"members"];
+				[newTrip setValue:[singleTripInfo objectForKey:@"nonmembers"] forKey:@"nonMembers"];
+				[newTrip setValue:[singleTripInfo objectForKey:@"payForParking"] forKey:@"payForParking"];
+				[newTrip setValue:[singleTripInfo objectForKey:@"toll"] forKey:@"toll"];
+				[newTrip setValue:[singleTripInfo objectForKey:@"payForParkingAmt"] forKey:@"payForParkingAmt"];
+				[newTrip setValue:[singleTripInfo objectForKey:@"tollAmt"] forKey:@"tollAmt"];
+				[newTrip setValue:[singleTripInfo objectForKey:@"travelBy"] forKey:@"travelBy"];
+				[newTrip setValue:[dateFormat dateFromString:[singleTripInfo objectForKey:@"stopTime"]] forKey:@"stopTime"];
+				
+				NSArray *coords =[singleTripInfo objectForKey:@"coords"];
+				//NSLog(@"Coords is ............................................%@",coords);
+				//[LIU] Iterate coord in coords item
+				NSEnumerator *e = [coords objectEnumerator];
+				id object;
+				while (object = [e nextObject]) {
+					NSManagedObject *newCoord = [NSEntityDescription insertNewObjectForEntityForName:@"Coord" inManagedObjectContext:context];
+					//NSLog(@"Coord is ............................................%@",object);
+					NSDictionary *coord =object;
+					NSDictionary *coordDetails = [coord objectForKey:@"coord"];
+					
+					[newCoord setValue:[coordDetails objectForKey:@"alt"] forKey:@"altitude"];
+					[newCoord setValue:[coordDetails objectForKey:@"hac"] forKey:@"hAccuracy"];
+					[newCoord setValue:[coordDetails objectForKey:@"lat"] forKey:@"latitude"];
+					[newCoord setValue:[coordDetails objectForKey:@"lon"] forKey:@"longitude"];
+					[newCoord setValue:[dateFormat dateFromString:[coordDetails objectForKey:@"rec"]] forKey:@"recorded"];
+					[newCoord setValue:[coordDetails objectForKey:@"vac"] forKey:@"vAccuracy"];
+					[newCoord setValue:[coordDetails objectForKey:@"spd"] forKey:@"speed"];
+					
+					[newCoord setValue:newTrip forKey:@"trip"];
+					
+					NSError *error = nil;
+					// Save the object to persistent store
+					if (![context save:&error]) {
+						NSLog(@"Save trip info FAILED! %@ %@", error, [error localizedDescription]);
+					}
+				}
+			}
+			else{
+				return 0;
+			}
+			//[LIU] DONT DELELE: below codes are used to check the records count in tables
+			//			NSEntityDescription *entity = [NSEntityDescription entityForName:@"Trip" inManagedObjectContext:tripManager.managedObjectContext];
+			//			//NSEntityDescription *entity = [NSEntityDescription entityForName:@"Trip" inManagedObjectContext:managedContext1];
+			//
+			//			NSFetchRequest *request1 = [[NSFetchRequest alloc] init];
+			//			[request1 setEntity:entity];
+			//
+			//			NSError *error;
+			//			NSInteger count = [tripManager.managedObjectContext countForFetchRequest:request1 error:&error];
+			//			NSLog(@"count trip firstly save .........records.....= %ld", count);
+			//			NSEntityDescription *entity1 = [NSEntityDescription entityForName:@"Coord" inManagedObjectContext:tripManager.managedObjectContext];
+			//			[request1 setEntity:entity1];
+			//			count = [tripManager.managedObjectContext countForFetchRequest:request1 error:&error];
+			//			NSLog(@"count coord firstly save .........records.....= %ld", count);
+			
+		}
+	}
+	
+	
+	return countNewTrips;
+	//return 1;
+	
 }
 
 //[LIU]this cancel button can be removed

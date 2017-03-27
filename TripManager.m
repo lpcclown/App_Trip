@@ -38,7 +38,9 @@
 #import "SavedTripsViewController.h"
 #import "OneTimeQuestionsViewController.h"
 #import "CoordLocal.h"
-
+#import "RecordTripViewController.h"
+#import "ServerInteract.h"
+#import "FloridaTripTrackerAppDelegate.h"
 
 // use this epsilon for both real-time and post-processing distance calculations
 #define kEpsilonAccuracy		100.0
@@ -242,32 +244,63 @@
 	// [LIU] Record the coord info to new table CoordLocal, which doesn't have relationship with Trip table
 	counter ++;
 	if (counter%5 ==0 ){
-	CoordLocal *coordLocal = [NSEntityDescription insertNewObjectForEntityForName:@"CoordLocal" inManagedObjectContext:managedObjectContext];
-	
-	[coordLocal setAltitude:[NSNumber numberWithInt:location.altitude]];
-	[coordLocal setLatitude:[NSNumber numberWithDouble:location.coordinate.latitude]];
-	[coordLocal setLongitude:[NSNumber numberWithDouble:location.coordinate.longitude]];
-	
-	// NOTE: location.timestamp is a constant value on Simulator
-	//[coord setRecorded:[NSDate date]];
-	[coordLocal setRecorded:location.timestamp];
-	
-	[coordLocal setSpeed:[NSNumber numberWithDouble:location.speed]];
-	[coordLocal setHAccuracy:[NSNumber numberWithDouble:location.horizontalAccuracy]];
-	[coordLocal setVAccuracy:[NSNumber numberWithDouble:location.verticalAccuracy]];
-	NSError *error;
-	
+		CoordLocal *coordLocal = [NSEntityDescription insertNewObjectForEntityForName:@"CoordLocal" inManagedObjectContext:managedObjectContext];
+		
+		[coordLocal setAltitude:[NSNumber numberWithInt:location.altitude]];
+		[coordLocal setLatitude:[NSNumber numberWithDouble:location.coordinate.latitude]];
+		[coordLocal setLongitude:[NSNumber numberWithDouble:location.coordinate.longitude]];
+		
+		// NOTE: location.timestamp is a constant value on Simulator
+		//[coord setRecorded:[NSDate date]];
+		[coordLocal setRecorded:location.timestamp];
+		
+		[coordLocal setSpeed:[NSNumber numberWithDouble:location.speed]];
+		[coordLocal setHAccuracy:[NSNumber numberWithDouble:location.horizontalAccuracy]];
+		[coordLocal setVAccuracy:[NSNumber numberWithDouble:location.verticalAccuracy]];
+		[coordLocal setSendFlag:@0];
+		NSError *error;
+		
 		if (![managedObjectContext save:&error]) {
 			// Handle the error.
 			NSLog(@"TripManager addCoord to DB error %@, %@", error, [error localizedDescription]);
 		}
+		
+		
+		[coords insertObject:coordLocal atIndex:0];
+		NSLog(@"# coords = %lu", (unsigned long)[coords count]);
+		if (counter != 5){
+			CoordLocal *prev  = [coords objectAtIndex:1];
+			distance	+= [self distanceFrom:prev to:coordLocal realTime:YES];}
+	}
+	if (counter%10000 == 0){
 	
+		NSArray *coordsArray = [RecordTripViewController obtainTripsArray:0];
+		
+		//[LIU] send array directly
+		NSData *responseData = [ServerInteract sendRequest:coordsArray toURLAddress:kUpdateCoorFull];
+		
+		NSDictionary *serverFeedback = [NSJSONSerialization JSONObjectWithData:responseData options:0 error:nil];
+		NSString *serverFeedbackString = [serverFeedback objectForKey:@"Result"];
+		if ([serverFeedbackString hasSuffix:@"successfully."]){
+			
+			NSFetchRequest *request = [[NSFetchRequest alloc] init];
+			request.predicate = [NSPredicate predicateWithFormat:@"sendFlag == %@", @0];
+			FloridaTripTrackerAppDelegate *delegate= [[UIApplication sharedApplication] delegate];
+			NSManagedObjectContext *managedContext = [delegate managedObjectContext];
+			NSEntityDescription *coordLocal = [NSEntityDescription entityForName:@"CoordLocal" inManagedObjectContext:managedContext];
+			[request setEntity:coordLocal];
+			NSArray *sentTrip = [managedContext executeFetchRequest:request error:nil];
+			
+			NSEnumerator *e = [sentTrip objectEnumerator];
+			NSManagedObject* object;
+			while (object = [e nextObject]) {
+				[object setValue:@1 forKey:@"sendFlag"];
+			}
+			
+			[managedContext save:nil];
+		}
+		
 	
-	[coords insertObject:coordLocal atIndex:0];
-	NSLog(@"# coords = %lu", (unsigned long)[coords count]);
-	if (counter != 5){
-		CoordLocal *prev  = [coords objectAtIndex:1];
-		distance	+= [self distanceFrom:prev to:coordLocal realTime:YES];}
 	}
 	return distance;
 }

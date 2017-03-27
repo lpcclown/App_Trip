@@ -121,4 +121,6 @@
 - (void)handleForegrounding;
 - (void)handleTermination;
 
+//[LIU0326] obtain trip method will be used in perodical update alsos
++ (NSArray *) obtainTripsArray:(NSInteger *)sendFlag;
 @end

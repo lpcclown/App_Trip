@@ -380,7 +380,8 @@
 												  delegate:self
 										 cancelButtonTitle:@"OK"
 										 otherButtonTitles:nil];
-   [alert show];
+			//[LIU0326] temp marked out
+			//[alert show];
    
 	}
 	
@@ -398,9 +399,9 @@
 
 - (NSFetchedResultsController *) tripSectionShow
 {
-	if (_fetchedResultsController != nil) {
-		return _fetchedResultsController;
-	}
+//	if (_fetchedResultsController != nil) {
+//		return _fetchedResultsController;
+//	}
 	
 	NSFetchRequest *fetchRequest = [NSFetchRequest fetchRequestWithEntityName:@"Trip"];
 	
@@ -479,7 +480,7 @@
 
 
 - (void)viewWillAppear:(BOOL)animated
-{	self.navigationController.interactivePopGestureRecognizer.enabled = NO;//lx 0325
+{	self.navigationController.interactivePopGestureRecognizer.enabled = YES;//lx 0326
 	//self.navigationItem.prompt = nil;
 	UIBarButtonItem * item = [[UIBarButtonItem alloc] initWithCustomView:[[UIImageView alloc] initWithImage:[UIImage imageNamed:@"FDOT"]]];
 	self.navigationItem.rightBarButtonItem = item;
@@ -836,7 +837,13 @@
 	
 	// identify trip by row
 	//NSLog(@"didSelectRow: %d", indexPath.row);
-	selectedTrip = (Trip *)[trips objectAtIndex:indexPath.row];
+	long x = 0;
+	
+	for (int a = 0 ; a < indexPath.section; a++){
+		x += [tableView.dataSource tableView:tableView numberOfRowsInSection: a];
+	}
+	
+	selectedTrip = (Trip *)[trips objectAtIndex:indexPath.row + x];
 	NSLog(@"+++++++++++++++++++++++++++++tableview selected trip+++++++++++++++++++++++++++++++++++%@", selectedTrip);
 	
 	// check for recordingInProgress

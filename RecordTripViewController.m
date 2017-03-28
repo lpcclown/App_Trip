@@ -81,6 +81,8 @@
     locationManager.desiredAccuracy = kCLLocationAccuracyBest;
     //locationManager.desiredAccuracy = kCLLocationAccuracyNearestTenMeters;
     locationManager.delegate = self;
+	//[LIU0327]add filter for 1 meter.
+	[self.locationManager setDistanceFilter:1.0];
 	
 	if (SYSTEM_VERSION_GREATER_THAN_OR_EQUAL_TO(@"8.0")) {
 		[locationManager requestAlwaysAuthorization];
@@ -590,16 +592,16 @@
 														   delegate:self
 												  cancelButtonTitle:@"OK"
 												  otherButtonTitles:nil];
-			//[LIU0326]
-			//[alert show];
+			//[LIU0327]
+			[alert show];
 		}else{
 			UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"Confirmation"
 															message:[NSString stringWithFormat:@"Coordinates information failed to load to server."]
 														   delegate:self
 												  cancelButtonTitle:@"OK"
 												  otherButtonTitles:nil];
-			//[LIU0326]
-			//[alert show];
+			//[LIU0327]
+			[alert show];
 			
 		}
 		
@@ -889,6 +891,10 @@
     }
     // the timer is for visuals - no need for that but it doesn't seem to hurt
     // [self resetTimer];
+	
+	//[LIU0327]when service in backend change it to significant location change.
+	//[[self getLocationManager] stopUpdatingLocation];
+	//[[self getLocationManager] startMonitoringSignificantLocationChanges];
 }
 
 - (void)handleForegrounding

@@ -375,13 +375,13 @@
    break;
   default:
   {}
-   UIAlertView *alert = [[UIAlertView alloc] initWithTitle: [NSString stringWithFormat:@"%ld of them are pending to add detailed information" ,countPendingLocalTrip]
+   UIAlertView *alert = [[UIAlertView alloc] initWithTitle: [NSString stringWithFormat:@"%ld trips are pending to add detailed information, please add them accordingly. Thanks." ,countPendingLocalTrip]
                message:nil
 												  delegate:self
 										 cancelButtonTitle:@"OK"
 										 otherButtonTitles:nil];
-			//[LIU0326] temp marked out
-			//[alert show];
+			//[LIU0327] turn on
+			[alert show];
    
 	}
 	
@@ -480,7 +480,7 @@
 
 
 - (void)viewWillAppear:(BOOL)animated
-{	self.navigationController.interactivePopGestureRecognizer.enabled = YES;//lx 0326
+{	self.navigationController.interactivePopGestureRecognizer.enabled = NO;//lx 0327
 	//self.navigationItem.prompt = nil;
 	UIBarButtonItem * item = [[UIBarButtonItem alloc] initWithCustomView:[[UIImageView alloc] initWithImage:[UIImage imageNamed:@"FDOT"]]];
 	self.navigationItem.rightBarButtonItem = item;

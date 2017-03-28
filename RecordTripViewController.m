@@ -592,11 +592,11 @@
 														   delegate:self
 												  cancelButtonTitle:@"OK"
 												  otherButtonTitles:nil];
-			//[LIU0327]
+			//[LIU0328]
 			[alert show];
 		}else{
 			UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"Confirmation"
-															message:[NSString stringWithFormat:@"Coordinates information failed to load to server."]
+															message:[NSString stringWithFormat:@"Coordinates information failed to load to server. Please try again later."]
 														   delegate:self
 												  cancelButtonTitle:@"OK"
 												  otherButtonTitles:nil];

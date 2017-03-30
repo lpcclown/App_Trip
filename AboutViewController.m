@@ -68,6 +68,7 @@
 	instruction.text = KAppInstructions;
 	instruction.backgroundColor = [UIColor blackColor];
 	instruction.textColor = [UIColor whiteColor];
+	instruction.editable = NO;
 }
 
 

@@ -375,7 +375,7 @@
    break;
   default:
   {}
-   UIAlertView *alert = [[UIAlertView alloc] initWithTitle: [NSString stringWithFormat:@"%ld trips are pending to add detailed information, please add them accordingly. Thanks." ,countPendingLocalTrip]
+   UIAlertView *alert = [[UIAlertView alloc] initWithTitle: [NSString stringWithFormat:@"Please review the %ld trips identified for your travel day and answer a few questions for each trip by selecting the trip find from the list." ,countPendingLocalTrip]
                message:nil
 												  delegate:self
 										 cancelButtonTitle:@"OK"

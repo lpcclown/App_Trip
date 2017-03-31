@@ -789,10 +789,14 @@
 	reminderManager = [[ReminderManager alloc] init];
 	
     // transform start button into save button
-    [startButton setTitle:@"FINISH RECORDING" forState:UIControlStateNormal];
+    [startButton setTitle:@"END RECORDING" forState:UIControlStateNormal];
     [startButton setBackgroundImage:[[UIImage imageNamed:@"save_button.png"] resizableImageWithCapInsets:UIEdgeInsetsMake(48,20,48,20) resizingMode: UIImageResizingModeStretch] forState:UIControlStateNormal];
 	//[LIU] adjust finish button width	
 	//startButton.frame = CGRectMake( 18.0, 159.0, 386, kCustomButtonHeight );
+	
+	//[LIU0330] start button grey out until 18 hours.
+	startButton.enabled = NO;
+	
 	
     // Start the location manager.
 	// [LIU0314]

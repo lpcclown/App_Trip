@@ -337,11 +337,16 @@
 			[travelModePicker selectRow:i inComponent:0 animated:NO];
 		}
 	}
+	
+
+
 	[householdmembersSegment setSelectedSegmentIndex:[[trip isMembers] intValue]];
 	
 	[nonHouseholdmembersSegment setSelectedSegmentIndex:[[trip isnonMembers] intValue]];
 	nonHouseholdMembers.text=[trip.nonMembers stringValue];
-	numofhousholdMemberselected = [trip.members intValue];
+	//NSLog(@"[trip.members intValue] is%d",[trip.members intValue]);
+	if([trip.members intValue]<0){numofhousholdMemberselected=0;}
+	else numofhousholdMemberselected=[trip.members intValue];
 	
 	
 	if ([[trip driverType] compare:@"Driver"] == NSOrderedSame) {
@@ -350,7 +355,7 @@
 		[driverPassengerSegment setSelectedSegmentIndex:1];
  
 	[tollSegment setSelectedSegmentIndex:[[trip toll] intValue]];
-	
+
 	PickerViewDataSource *purpose= (PickerViewDataSource *)[activityPicker dataSource];
 	for (int i= 0; i < [[purpose dataArray] count]; i++) {
 		if ([[trip purpose] compare:[[purpose dataArray] objectAtIndex:i]] == NSOrderedSame) {
@@ -404,6 +409,7 @@
 			DataTable.hidden = NO;
 			NSString *familyMembers = [trip familyMembers];
 			NSArray *familyMembersAdded = [familyMembers componentsSeparatedByString: @","];
+			NSLog(@"familyMembersAdded are %@",familyMembersAdded);
 			NSArray *arrayFamilyMembersAdded = [[NSMutableArray alloc] initWithArray:familyMembersAdded];
 			for (int i = 0 ; i < arrayFamilyMembersAdded.count; i++) {
 				//for (int j = 0 ;j < dataArray1.count; j++){
@@ -445,9 +451,8 @@
 - (void)switchChanged:(id)sender {
 	UISwitch *switchControl = sender;
 	NSInteger *switchtag=switchControl.tag;
-	
 	if (switchControl.on == YES) {
-		NSLog(@"%d",numofhousholdMemberselected);
+		NSLog(@"initial numofhousholdMemberselected%d",numofhousholdMemberselected);
 		housholdMemberselected = [housholdMemberselected stringByAppendingFormat:@"%@,", [dataArray1 objectAtIndex:switchtag]];
 		numofhousholdMemberselected++;
 		
@@ -525,12 +530,13 @@
 }
 
 -(void)viewWillAppear:(BOOL)animated{
-	
-	[householdmembersSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
-	[nonHouseholdmembersSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
-	[driverPassengerSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
-	[tollSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
-	//lx 0325
+	if([trip purpose].length == 0){
+		[householdmembersSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
+		[nonHouseholdmembersSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
+		[driverPassengerSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
+		[tollSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
+		//lx 0325
+	}
 	
 	nonHouseholdMembers.enabled = NO;
 	nonHouseholdMembers.text = @"0";
@@ -550,6 +556,7 @@
 - (void)viewDidLoad
 {
 	[super viewDidLoad];
+	
 	
 	self.title = NSLocalizedString(@"Trip Purpose", @"");
 	//lx

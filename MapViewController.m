@@ -304,7 +304,7 @@ clickedButtonAtIndex:(NSInteger)buttonIndex{
 		//[LIU]how many records in the selected trip
 		NSArray *coordsAmount = [trip.coords allObjects];
 		int a = [coordsAmount count];
-		NSLog(@"%d...................how many coords for one trip...................", a);
+		//NSLog(@"%d...................how many coords for one trip...................", a);
 		if(a>0)
 		{
 		// sort filtered coords by recorded date

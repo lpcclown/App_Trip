@@ -322,14 +322,31 @@
 	}
 	//[LIU]0314 provide db info to page
 	
-	startTimeChange.text= [NSDateFormatter localizedStringFromDate:trip.startTime
-														 dateStyle:NSDateFormatterShortStyle
-														 timeStyle:NSDateFormatterMediumStyle];
-	endTimechange.text=[NSDateFormatter localizedStringFromDate:trip.stopTime
-														 dateStyle:NSDateFormatterShortStyle
-														 timeStyle:NSDateFormatterMediumStyle];
+	NSDateFormatter *dateFormat = [[NSDateFormatter alloc] init];
+ 
+	//[LIU]
+	if ([startTimeChange.text rangeOfString:@"M"].location == NSNotFound) {
+	//24h
+	[dateFormat setDateFormat:@"dd/MM/yyyy, HH:mm:ss"];
+	} else {
+	//12h
+	[dateFormat setDateFormat:@"dd/MM/yyyy, hh:mm:ss a"];
+	}
+	NSLocale *locale = [[NSLocale alloc] initWithLocaleIdentifier:@"en_US"];
+	[dateFormat setLocale:locale];
 	
+	startTimeChange.text = [dateFormat stringFromDate: trip.startTime];
+	endTimechange.text= [dateFormat stringFromDate: trip.startTime];
+ 
+	NSLog(@"screen display time:%@",startTimeChange.text);
+	NSLog(@"screen display time:%@",endTimechange.text);
 	
+	//	startTimeChange.text= [NSDateFormatter localizedStringFromDate:trip.startTime
+	//														 dateStyle:NSDateFormatterShortStyle
+	//														 timeStyle:NSDateFormatterMediumStyle];
+	//	endTimechange.text=[NSDateFormatter localizedStringFromDate:trip.stopTime
+	//														 dateStyle:NSDateFormatterShortStyle
+	//														 timeStyle:NSDateFormatterMediumStyle];
 	
 	TravelModePickerViewDataSource *travelBy= (TravelModePickerViewDataSource *)[travelModePicker dataSource];
 	for (int i= 0; i < [[travelBy travelModes] count]; i++) {
@@ -338,8 +355,6 @@
 		}
 	}
 	
-
-
 	[householdmembersSegment setSelectedSegmentIndex:[[trip isMembers] intValue]];
 	
 	[nonHouseholdmembersSegment setSelectedSegmentIndex:[[trip isnonMembers] intValue]];
@@ -355,16 +370,13 @@
 		[driverPassengerSegment setSelectedSegmentIndex:1];
  
 	[tollSegment setSelectedSegmentIndex:[[trip toll] intValue]];
-
+	
 	PickerViewDataSource *purpose= (PickerViewDataSource *)[activityPicker dataSource];
 	for (int i= 0; i < [[purpose dataArray] count]; i++) {
 		if ([[trip purpose] compare:[[purpose dataArray] objectAtIndex:i]] == NSOrderedSame) {
 			[activityPicker selectRow:i inComponent:0 animated:NO];
 		}
 	}
-	
-	
-	
 	
 	return self;
 }

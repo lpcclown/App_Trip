@@ -788,15 +788,21 @@
 	// init reminder manager
 	reminderManager = [[ReminderManager alloc] init];
 	
-    // transform start button into save button
-    [startButton setTitle:@"END RECORDING" forState:UIControlStateNormal];
-    [startButton setBackgroundImage:[[UIImage imageNamed:@"save_button.png"] resizableImageWithCapInsets:UIEdgeInsetsMake(48,20,48,20) resizingMode: UIImageResizingModeStretch] forState:UIControlStateNormal];
-	//[LIU] adjust finish button width	
-	//startButton.frame = CGRectMake( 18.0, 159.0, 386, kCustomButtonHeight );
-	
 	//[LIU0330] start button grey out until 18 hours.
 	startButton.enabled = NO;
+	startButton.alpha = 0.5;
 	
+	// transform start button into save button
+    [startButton setTitle:@"END RECORDING" forState:UIControlStateNormal];
+    [startButton setBackgroundImage:[[UIImage imageNamed:@"save_button.png"] resizableImageWithCapInsets:UIEdgeInsetsMake(48,20,48,20) resizingMode: UIImageResizingModeStretch] forState:UIControlStateNormal];
+	//[LIU0331] set disable state of the save button
+	[startButton setTitle:@"END RECORDING" forState:UIControlStateDisabled];
+	[startButton setBackgroundImage:[[UIImage imageNamed:@"savegrey_button.png"] resizableImageWithCapInsets:UIEdgeInsetsMake(48,20,48,20) resizingMode: UIImageResizingModeStretch] forState:UIControlStateDisabled];
+	
+	//[LIU] adjust finish button width
+	//startButton.frame = CGRectMake( 18.0, 159.0, 386, kCustomButtonHeight );
+	
+
 	
     // Start the location manager.
 	// [LIU0314]
@@ -925,6 +931,36 @@
 	// [LIU] Added the function to auto run the start when page load trigger from SavedTrip page
 	if(recording == NO){
 		[self start:startButton];
+	}else{
+	
+		//[LIU0331]
+		NSFetchRequest *request = [[NSFetchRequest alloc] init];
+		FloridaTripTrackerAppDelegate *delegatea= [[UIApplication sharedApplication] delegate];
+		NSManagedObjectContext *managedContext = [delegatea managedObjectContext];
+		
+		//[LIU] Obtain coords info
+		NSEntityDescription *coordLocal = [NSEntityDescription entityForName:@"CoordLocal" inManagedObjectContext:managedContext];
+		[request setEntity:coordLocal];
+		//[LIU] Configure sort order
+		NSSortDescriptor *sortDescriptor = [[NSSortDescriptor alloc] initWithKey:@"recorded" ascending:YES];
+		NSArray *sortDescriptors = [[NSArray alloc] initWithObjects:sortDescriptor, nil];
+		[request setSortDescriptors:sortDescriptors];
+		NSError *error = nil;
+		NSMutableArray *coordLocalArray = [[managedContext executeFetchRequest:request error:&error] mutableCopy];
+		if ([coordLocalArray count] != 0){
+			CoordLocal *earliestLocalCoord = [coordLocalArray objectAtIndex:0];
+			NSTimeInterval distanceBetweenDates = [[NSDate date] timeIntervalSinceDate:earliestLocalCoord.recorded];
+			//[LIU0331] after 2 hours to enable
+			if(distanceBetweenDates>60 * 60 * 2){
+				startButton.enabled = YES;
+				startButton.alpha = 1.0;
+			}
+		}
+		else{
+			//[LIU0330] start button grey out until 18 hours.
+			startButton.enabled = NO;
+			startButton.alpha = 0.5;
+		}
 	}
 	// [LIU] disable the cancel button
 	cancelButton.hidden = TRUE;

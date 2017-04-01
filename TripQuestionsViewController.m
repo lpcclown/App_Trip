@@ -336,10 +336,10 @@
 	[dateFormat setLocale:locale];
 	
 	startTimeChange.text = [dateFormat stringFromDate: trip.startTime];
-	endTimechange.text= [dateFormat stringFromDate: trip.startTime];
+	endTimechange.text= [dateFormat stringFromDate: trip.stopTime];
  
-	NSLog(@"screen display time:%@",startTimeChange.text);
-	NSLog(@"screen display time:%@",endTimechange.text);
+	//NSLog(@"screen display time:%@",startTimeChange.text);
+	//NSLog(@"screen display time:%@",endTimechange.text);
 	
 	//	startTimeChange.text= [NSDateFormatter localizedStringFromDate:trip.startTime
 	//														 dateStyle:NSDateFormatterShortStyle

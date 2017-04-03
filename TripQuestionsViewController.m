@@ -124,163 +124,198 @@
 //lx
 - (IBAction)save:(id)sender
 {
-	//lx
-	if ([[travelModePicker delegate] pickerView:travelModePicker titleForRow:[travelModePicker selectedRowInComponent:0] forComponent:0].length == 0){
-		UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"Please select your type of transportation"
+	if((numofhousholdMemberselected == 0 && [householdmembersSegment selectedSegmentIndex] == 1)){
+		
+		UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"Please select your household members on this trip transportation."
 														message:nil
 													   delegate:self
 											  cancelButtonTitle:@"OK"
 											  otherButtonTitles:nil];
 		[alert show];
-	}
-	else if ([[activityPicker delegate] pickerView:activityPicker titleForRow:[activityPicker selectedRowInComponent:0] forComponent:0].length == 0){
-  
-		UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"Please select your PRIMARY activity"
-														message:nil
-													   delegate:self
-											  cancelButtonTitle:@"OK"
-											  otherButtonTitles:nil];
-		[alert show];
-	}
- //*lx
-	
-	else{
-	 
+	}else{
+		
+		//lx
+		if ([[travelModePicker delegate] pickerView:travelModePicker titleForRow:[travelModePicker selectedRowInComponent:0] forComponent:0].length == 0){
+			UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"Please select your type of transportation."
+															message:nil
+														   delegate:self
+												  cancelButtonTitle:@"OK"
+												  otherButtonTitles:nil];
+			[alert show];
+		}
+		else if ([[activityPicker delegate] pickerView:activityPicker titleForRow:[activityPicker selectedRowInComponent:0] forComponent:0].length == 0){
+			
+			UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"Please select your PRIMARY activity."
+															message:nil
+														   delegate:self
+												  cancelButtonTitle:@"OK"
+												  otherButtonTitles:nil];
+			[alert show];
+		}
+		//*lx
+		
+		else{
+			
 			if ( [housholdMemberselected length] != 0){
 				housholdMemberselected = [housholdMemberselected substringToIndex:[housholdMemberselected length]-1];
 				NSLog(@"housholdMemberselected finally:%@,so total householdmembers %@is on this trip", housholdMemberselected,[NSNumber numberWithInteger:numofhousholdMemberselected] );
+			}
+			
+			//[LIU] mark out furthur logic
+			//[delegate didPickPurpose: tripAnswers];
+			
+			//[LIU] save updated trip into DB
+			NSFetchRequest *request = [[NSFetchRequest alloc] init];
+			FloridaTripTrackerAppDelegate *delegatea= [[UIApplication sharedApplication] delegate];
+			NSManagedObjectContext *managedContext = [delegatea managedObjectContext];
+			request.predicate = [NSPredicate predicateWithFormat:@"sysTripID = %@", trip.sysTripID];
+			NSLog(@"To be updated trip ID is: %@", trip.sysTripID);
+			NSEntityDescription *entity = [NSEntityDescription entityForName:@"Trip" inManagedObjectContext:managedContext];
+			[request setEntity:entity];
+			NSArray *result = [managedContext executeFetchRequest:request error:nil];
+			Trip *directedTrip = [result objectAtIndex:0];
+			NSDateFormatter *dateFormat = [[NSDateFormatter alloc] init];
+			
+			//[LIU]
+			if ([startTimeChange.text rangeOfString:@"M"].location == NSNotFound) {
+				//24h
+				[dateFormat setDateFormat:@"dd/MM/yyyy, HH:mm:ss"];
+			} else {
+				//12h
+				[dateFormat setDateFormat:@"dd/MM/yyyy, hh:mm:ss a"];
+			}
+			NSLocale *locale = [[NSLocale alloc] initWithLocaleIdentifier:@"en_US"];
+			[dateFormat setLocale:locale];
+			directedTrip.startTime=[dateFormat dateFromString:startTimeChange.text];
+			directedTrip.stopTime=[dateFormat dateFromString:endTimechange.text];
+			directedTrip.travelBy = [[travelModePicker delegate] pickerView:travelModePicker titleForRow:[travelModePicker selectedRowInComponent:0] forComponent:0];
+			//householdmembersSegment
+			if([householdmembersSegment selectedSegmentIndex] !=-1){
+				
+				directedTrip.isMembers =(([householdmembersSegment selectedSegmentIndex] == 0) ? [NSNumber numberWithInt:0] : [NSNumber numberWithInt:1]);
+			}else directedTrip.isMembers = @-1;
+		 
+			directedTrip.familyMembers = housholdMemberselected;
+			directedTrip.members = [NSNumber numberWithInteger:numofhousholdMemberselected] ;
+			
+			//isnonMembers
+			if([nonHouseholdmembersSegment selectedSegmentIndex] !=-1){
+				directedTrip.isnonMembers =(([nonHouseholdmembersSegment selectedSegmentIndex] == 0) ? [NSNumber numberWithInt:0] : [NSNumber numberWithInt:1]);
+			}else
+				directedTrip.isnonMembers = @-1;
+			
+			directedTrip.nonMembers =[NSNumber numberWithInt:[[nonHouseholdMembers text] intValue]];
+			//driverType
+			
+			
+			if([driverPassengerSegment selectedSegmentIndex] !=-1){
+				
+		  directedTrip.driverType=([driverPassengerSegment selectedSegmentIndex] == 0) ? (@"Driver") : (@"Passenger") ;
+			}else
+				directedTrip.driverType = @"";
+			
+			//toll
+			if([tollSegment selectedSegmentIndex] !=-1){
+				
+				directedTrip.toll =(([tollSegment selectedSegmentIndex] == 0) ? [NSNumber numberWithInt:0] : [NSNumber numberWithInt:1]);
+			}else
+				directedTrip.toll = @-1;
+			//[LIU]
+			//PickerViewDataSource *purposeAnswer= (PickerViewDataSource *)[activityPicker dataSource];
+			//	NSString *otherText= [otherTripPurposeText text];
+			//		if ([[purposeAnswer dataArray] objectAtIndex:11]) {
+			//			[tripAnswers setObject:otherText forKey:@"purpose"];
+			//		}
+			directedTrip.purpose = [[activityPicker delegate] pickerView:activityPicker titleForRow:[activityPicker selectedRowInComponent:0] forComponent:0];
+			
+			
+			//[LIU] save updated trip into server
+			NSFetchRequest *userRequest = [[NSFetchRequest alloc] init];
+			NSEntityDescription *user = [NSEntityDescription entityForName:@"User" inManagedObjectContext:managedContext];
+			[userRequest setEntity:user];
+			NSArray *userInUserTable = [managedContext executeFetchRequest:userRequest error:nil];
+			User *person= [userInUserTable objectAtIndex:0];
+			NSString *deviceNum =person.deviceNum;
+			NSDictionary *userDevice = [NSDictionary dictionaryWithObjectsAndKeys:deviceNum,@"device", nil];
+			NSDateFormatter *dateFormatOnServer = [[NSDateFormatter alloc] init];
+			[dateFormatOnServer setDateFormat:@"MM/dd/yyyy hh:mm:ss a"];//[LIU] to update the date format as server acceptable
+			[dateFormatOnServer setLocale:locale];
+			NSString *startTime = [dateFormatOnServer stringFromDate: directedTrip.startTime];
+			NSString *stopTime = [dateFormatOnServer stringFromDate: directedTrip.stopTime];
+			NSDictionary *updatedTripInfo = [NSDictionary dictionaryWithObjectsAndKeys:
+											 trip.sysTripID,@"tripid",
+											 @0,@"delays",
+											 @0,@"fare",
+											 directedTrip.isMembers,@"members",
+											 directedTrip.familyMembers,@"membersDetail",
+											 directedTrip.nonMembers,@"nonmembers",
+											 @0,@"payForParking",
+											 @0,@"payForParkingAmt",
+											 directedTrip.purpose,@"purpose",
+											 startTime,@"startTime",
+											 stopTime,@"stopTime",
+											 directedTrip.toll, @"toll",
+											 @0, @"tollAmt",
+											 directedTrip.travelBy, @"travelBy",
+											 userDevice, @"user", nil];
+			
+			NSData *responseData= [ServerInteract sendRequest:updatedTripInfo toURLAddress:KUpdateTrip];
+			if (responseData != nil){
+				NSDictionary *serverFeedback = [NSJSONSerialization JSONObjectWithData:responseData options:0 error:nil];
+				NSString *serverFeedbackString = [serverFeedback objectForKey:@"Result"];
+				
+				
+				if ([serverFeedbackString hasSuffix:@"was updated"]) {
+					[trip setSuccTag:@1];//[LIU] 1 means succeed, 0 means failed
+					
+					UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"Update Information To Server Succeed."
+																	message:nil
+																   delegate:self
+														  cancelButtonTitle:@"OK"
+														  otherButtonTitles:nil];
+					[alert show];
+					
+					//[LIU] the model view to disappear
+					[self dismissViewControllerAnimated:NO completion:^{
+						SavedTripsViewController *savedTripsViewController = [[SavedTripsViewController alloc]initWithNibName:@"MainWindow" bundle:nil];
+						[self.navigationController presentViewController:savedTripsViewController animated:YES completion:nil];
+					}];
+					
+					NSLog(@"Update trip info succeed DB tag: succ_Tag:1");
+					
+				}
+				
+				else {
+					[trip setSuccTag:@0];
+					NSLog(@"Update trip info failed DB tag: succ_Tag:0");
+					UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"Update Information To Server Failed, Please Try Again Later."
+																	message:nil
+																   delegate:self
+														  cancelButtonTitle:@"OK"
+														  otherButtonTitles:nil];
+					[alert show];
+				}}else{		[trip setSuccTag:@0];
+					NSLog(@"Update trip info failed DB tag: succ_Tag:0");
+					UIAlertView *alert = [[UIAlertView alloc] initWithTitle:kInternetError
+																	message:nil
+																   delegate:self
+														  cancelButtonTitle:@"OK"
+														  otherButtonTitles:nil];
+					[alert show];
+				}
+			
+			//[LIU] save the latest info to DB.
+			if ([managedContext save:nil]) {
+				
+				NSLog(@"Update Trip detailed info to DB succeed.");
+				
+			} else {
+				
+				NSLog(@"Update Trip detailed info to DB failed.");
+				
+			}
 		}
-	 
-	 //[LIU] mark out furthur logic
-	 //[delegate didPickPurpose: tripAnswers];
-	 
-	 //[LIU] save updated trip into DB
-	 NSFetchRequest *request = [[NSFetchRequest alloc] init];
-	 FloridaTripTrackerAppDelegate *delegatea= [[UIApplication sharedApplication] delegate];
-	 NSManagedObjectContext *managedContext = [delegatea managedObjectContext];
-	 request.predicate = [NSPredicate predicateWithFormat:@"sysTripID = %@", trip.sysTripID];
-	 NSLog(@"To be updated trip ID is: %@", trip.sysTripID);
-	 NSEntityDescription *entity = [NSEntityDescription entityForName:@"Trip" inManagedObjectContext:managedContext];
-	 [request setEntity:entity];
-	 NSArray *result = [managedContext executeFetchRequest:request error:nil];
-	 Trip *directedTrip = [result objectAtIndex:0];
-	 NSDateFormatter *dateFormat = [[NSDateFormatter alloc] init];
-		
-	 //[LIU]
-	 if ([startTimeChange.text rangeOfString:@"M"].location == NSNotFound) {
-		 //24h
-		 [dateFormat setDateFormat:@"dd/MM/yyyy, HH:mm:ss"];
-	 } else {
-		 //12h
-		 [dateFormat setDateFormat:@"dd/MM/yyyy, hh:mm:ss a"];
-	 }
-	 NSLocale *locale = [[NSLocale alloc] initWithLocaleIdentifier:@"en_US"];
-	 [dateFormat setLocale:locale];
-	 directedTrip.startTime=[dateFormat dateFromString:startTimeChange.text];
-	 directedTrip.stopTime=[dateFormat dateFromString:endTimechange.text];
-	 directedTrip.travelBy = [[travelModePicker delegate] pickerView:travelModePicker titleForRow:[travelModePicker selectedRowInComponent:0] forComponent:0];
-	 directedTrip.isMembers = (([householdmembersSegment selectedSegmentIndex] == 0)?[NSNumber numberWithInt:0] : [NSNumber numberWithInt:1]);
-	 directedTrip.familyMembers = housholdMemberselected;
-	 directedTrip.members = [NSNumber numberWithInteger:numofhousholdMemberselected] ;
-	 directedTrip.isnonMembers =(([nonHouseholdmembersSegment selectedSegmentIndex] == 0) ? [NSNumber numberWithInt:0] : [NSNumber numberWithInt:1]);
-	 directedTrip.nonMembers =[NSNumber numberWithInt:[[nonHouseholdMembers text] intValue]];
-	 directedTrip.driverType=([driverPassengerSegment selectedSegmentIndex] == 0) ? (@"Driver") : (@"Passenger") ;
-	 directedTrip.toll =(([tollSegment selectedSegmentIndex] == 0) ? [NSNumber numberWithInt:0] : [NSNumber numberWithInt:1]);
-	 //[LIU]
-	 //PickerViewDataSource *purposeAnswer= (PickerViewDataSource *)[activityPicker dataSource];
-	 //	NSString *otherText= [otherTripPurposeText text];
-	 //		if ([[purposeAnswer dataArray] objectAtIndex:11]) {
-	 //			[tripAnswers setObject:otherText forKey:@"purpose"];
-	 //		}
-	 directedTrip.purpose = [[activityPicker delegate] pickerView:activityPicker titleForRow:[activityPicker selectedRowInComponent:0] forComponent:0];
-	 
-	 
-	 //[LIU] save updated trip into server
-	 NSFetchRequest *userRequest = [[NSFetchRequest alloc] init];
-	 NSEntityDescription *user = [NSEntityDescription entityForName:@"User" inManagedObjectContext:managedContext];
-	 [userRequest setEntity:user];
-	 NSArray *userInUserTable = [managedContext executeFetchRequest:userRequest error:nil];
-	 User *person= [userInUserTable objectAtIndex:0];
-	 NSString *deviceNum =person.deviceNum;
-	 NSDictionary *userDevice = [NSDictionary dictionaryWithObjectsAndKeys:deviceNum,@"device", nil];
-	 NSDateFormatter *dateFormatOnServer = [[NSDateFormatter alloc] init];
-	 [dateFormatOnServer setDateFormat:@"MM/dd/yyyy hh:mm:ss a"];//[LIU] to update the date format as server acceptable
-	 [dateFormatOnServer setLocale:locale];
-	 NSString *startTime = [dateFormatOnServer stringFromDate: directedTrip.startTime];
-	 NSString *stopTime = [dateFormatOnServer stringFromDate: directedTrip.stopTime];
-	 NSDictionary *updatedTripInfo = [NSDictionary dictionaryWithObjectsAndKeys:
-									  trip.sysTripID,@"tripid",
-									  @0,@"delays",
-									  @0,@"fare",
-									  directedTrip.isMembers,@"members",
-									  directedTrip.familyMembers,@"membersDetail",
-									  directedTrip.nonMembers,@"nonmembers",
-									  @0,@"payForParking",
-									  @0,@"payForParkingAmt",
-									  directedTrip.purpose,@"purpose",
-									  startTime,@"startTime",
-									  stopTime,@"stopTime",
-									  directedTrip.toll, @"toll",
-									  @0, @"tollAmt",
-									  directedTrip.travelBy, @"travelBy",
-									  userDevice, @"user", nil];
-	 
-	 NSData *responseData= [ServerInteract sendRequest:updatedTripInfo toURLAddress:KUpdateTrip];
-	 if (responseData != nil){
-		 NSDictionary *serverFeedback = [NSJSONSerialization JSONObjectWithData:responseData options:0 error:nil];
-		 NSString *serverFeedbackString = [serverFeedback objectForKey:@"Result"];
-		 
-		 
-		 if ([serverFeedbackString hasSuffix:@"was updated"]) {
-			 [trip setSuccTag:@1];//[LIU] 1 means succeed, 0 means failed
-			 
-			 UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"Update Information To Server Succeed."
-															 message:nil
-															delegate:self
-												   cancelButtonTitle:@"OK"
-												   otherButtonTitles:nil];
-			 [alert show];
-			 
-			 //[LIU] the model view to disappear
-			 [self dismissViewControllerAnimated:NO completion:^{
-				 SavedTripsViewController *savedTripsViewController = [[SavedTripsViewController alloc]initWithNibName:@"MainWindow" bundle:nil];
-				 [self.navigationController presentViewController:savedTripsViewController animated:YES completion:nil];
-			 }];
-			 
-			 NSLog(@"Update trip info succeed DB tag: succ_Tag:1");
-			 
-		 }
-		 
-		 else {
-			 [trip setSuccTag:@0];
-			 NSLog(@"Update trip info failed DB tag: succ_Tag:0");
-			 UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"Update Information To Server Failed, Please Try Again Later."
-															 message:nil
-															delegate:self
-												   cancelButtonTitle:@"OK"
-												   otherButtonTitles:nil];
-			 [alert show];
-		 }}else{		[trip setSuccTag:@0];
-			 NSLog(@"Update trip info failed DB tag: succ_Tag:0");
-			 UIAlertView *alert = [[UIAlertView alloc] initWithTitle:kInternetError
-															 message:nil
-															delegate:self
-												   cancelButtonTitle:@"OK"
-												   otherButtonTitles:nil];
-			 [alert show];
-		 }
-	 
-	 //[LIU] save the latest info to DB.
-	 if ([managedContext save:nil]) {
-		 
-		 NSLog(@"Update Trip detailed info to DB succeed.");
-		 
-	 } else {
-		 
-		 NSLog(@"Update Trip detailed info to DB failed.");
-		 
-	 }
- }
+	}
 }
 
 - (IBAction)backgroundTouched:(id)sender {
@@ -315,6 +350,8 @@
 //[LIU]
 - (id)initWithTrip:(Trip *)tripFromMapView
 {
+	
+
 	//if (self = [super init]) {
 	if (self = [self initWithNibName:@"TripPurposePicker" bundle:nil]) {
 		NSLog(@"TripQuestionViewController initWithTrip");
@@ -336,10 +373,10 @@
 	[dateFormat setLocale:locale];
 	
 	startTimeChange.text = [dateFormat stringFromDate: trip.startTime];
-	endTimechange.text= [dateFormat stringFromDate: trip.stopTime];
+	endTimechange.text= [dateFormat stringFromDate: trip.stopTime];//lx 0401
  
-	//NSLog(@"screen display time:%@",startTimeChange.text);
-	//NSLog(@"screen display time:%@",endTimechange.text);
+	NSLog(@"screen display time:%@",startTimeChange.text);
+	NSLog(@"screen display time:%@",endTimechange.text);
 	
 	//	startTimeChange.text= [NSDateFormatter localizedStringFromDate:trip.startTime
 	//														 dateStyle:NSDateFormatterShortStyle
@@ -352,24 +389,56 @@
 	for (int i= 0; i < [[travelBy travelModes] count]; i++) {
 		if ([[trip travelBy] compare:[[travelBy travelModes] objectAtIndex:i]] == NSOrderedSame) {
 			[travelModePicker selectRow:i inComponent:0 animated:NO];
-		}
+		}else
+	{[driverPassengerSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
+		[driverPassengerSegment setEnabled:NO];
+	}
 	}
 	
 	[householdmembersSegment setSelectedSegmentIndex:[[trip isMembers] intValue]];
 	
 	[nonHouseholdmembersSegment setSelectedSegmentIndex:[[trip isnonMembers] intValue]];
 	nonHouseholdMembers.text=[trip.nonMembers stringValue];
+	
+	NSLog(@"[trip driverType] is %@",[trip driverType]);
+	NSLog(@"[trip toll] is %@",[trip toll]);
+	NSLog(@"[trip.nonMembers stringValue] is %@",[trip.nonMembers stringValue]);
 	//NSLog(@"[trip.members intValue] is%d",[trip.members intValue]);
-	if([trip.members intValue]<0){numofhousholdMemberselected=0;}
-	else numofhousholdMemberselected=[trip.members intValue];
+	if([trip.members intValue]<0){
+		numofhousholdMemberselected=0;
+	}
+	else
+		numofhousholdMemberselected=[trip.members intValue];
+	
+	if([trip.isnonMembers intValue]<=0){
+		nonHouseholdMembers.text=@"0";
+	}
+	else
+		nonHouseholdMembers.text=[trip.nonMembers stringValue];
+	NSLog(@"nonHouseholdMembers.text is %@",nonHouseholdMembers.text);
 	
 	
 	if ([[trip driverType] compare:@"Driver"] == NSOrderedSame) {
 		[driverPassengerSegment setSelectedSegmentIndex:0];
 	}else
-		[driverPassengerSegment setSelectedSegmentIndex:1];
- 
-	[tollSegment setSelectedSegmentIndex:[[trip toll] intValue]];
+	{
+		if ([[trip driverType] compare:@"Passenger"] == NSOrderedSame) {
+			[driverPassengerSegment setSelectedSegmentIndex:1];
+		}else
+		{
+			[driverPassengerSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
+			[driverPassengerSegment setEnabled:NO];
+		}
+	}
+	
+	if ([[trip toll] isEqual:@1]  ||  [[trip toll] isEqual:@0]) {
+		[tollSegment setSelectedSegmentIndex:[[trip toll] intValue]];
+	}else
+	{
+		[tollSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
+		[tollSegment setEnabled:NO];
+	}
+	
 	
 	PickerViewDataSource *purpose= (PickerViewDataSource *)[activityPicker dataSource];
 	for (int i= 0; i < [[purpose dataArray] count]; i++) {
@@ -439,6 +508,8 @@
 			}
 			
 		}
+		
+		
 		[switchView addTarget:self action:@selector(switchChanged:) forControlEvents:UIControlEventValueChanged];
 		NSLog(@"Cell is ....%@",cell);
 		// Add a UISwitch to the accessory view.
@@ -542,6 +613,7 @@
 }
 
 -(void)viewWillAppear:(BOOL)animated{
+	nonHouseholdMembers.enabled = NO;
 	if([trip purpose].length == 0){
 		[householdmembersSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
 		[nonHouseholdmembersSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
@@ -550,8 +622,6 @@
 		//lx 0325
 	}
 	
-	nonHouseholdMembers.enabled = NO;
-	nonHouseholdMembers.text = @"0";
 	
 	
 	if ([trip familyMembers] != nil && ![[trip familyMembers]  isEqual: @""] ){
@@ -570,7 +640,7 @@
 	[super viewDidLoad];
 	
 	
-	self.title = NSLocalizedString(@"Trip Purpose", @"");
+	self.title = NSLocalizedString(@"Trip Details", @"");
 	//lx
 
 	FloridaTripTrackerAppDelegate *delegatea= [[UIApplication sharedApplication] delegate];
@@ -583,8 +653,13 @@
 	User *person= [userInUserTable objectAtIndex:0];
 	familyMember =person.familyMembers;
 	NSArray * familyMembersload = [familyMember componentsSeparatedByString: @","];
-	dataArray1 = [[NSMutableArray alloc] initWithArray:familyMembersload];
-	NSLog(@"%@",dataArray1);
+	//[LIU0402]add predicate to filter out the self member
+	NSArray * newFamilyMembersload = [familyMembersload filteredArrayUsingPredicate: [NSPredicate predicateWithFormat:@"NOT(SELF beginswith %@)", person.name]];
+//	NSLog(@"New Family Members: %@",newFamilyMembersload);
+	dataArray1 = [[NSMutableArray alloc] initWithArray:newFamilyMembersload];
+//	NSLog(@"Family Members: %@",dataArray1);
+//	NSLog(@"Person ID: %@",person.name);
+
 	double tableheight=120;
 	if ([dataArray1 count]>3) {
 		tableheight=120;
@@ -740,12 +815,14 @@
 		[DataTable setHidden:YES];
 		
 	}else [DataTable setHidden:NO];
+	
 	if (nonHouseholdmembersSegment.selectedSegmentIndex == 0) {
 		nonHouseholdMembers.text=@"0";
 		nonHouseholdMembers.enabled = NO;
-	}else{
-		nonHouseholdMembers.text=@"";
-		nonHouseholdMembers.enabled=YES;}
+	}else if (nonHouseholdmembersSegment.selectedSegmentIndex == 1) {
+			nonHouseholdMembers.text=@"";
+			nonHouseholdMembers.enabled=YES;
+		}
 }
 //*lx
 
@@ -754,17 +831,33 @@
 
 - (void)pickerView:(UIPickerView *)pickerView didSelectRow:(NSInteger)row inComponent:(NSInteger)component
 {
-	//lx 0314
- if (pickerView == travelModePicker) {//lx remember change it into ageinfo
-	 if (row == 7) {
-		 [driverPassengerSegment setEnabled:NO];//lx
+	//lx 0401
+ if (pickerView == travelModePicker) {
+	 
+	 
+	 if (row == 7 || row == 8 || row ==0) {
+		 [driverPassengerSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
+		 [driverPassengerSegment setEnabled:NO];
 		 
+		 [tollSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
+		 [tollSegment setEnabled:NO];
+	 }else
+	 {
+		 if (row > 2) {
+			 [driverPassengerSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
+			 [driverPassengerSegment setEnabled:NO];
+	 }
+		 
+	 else {
+		 [driverPassengerSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
+		 [driverPassengerSegment setEnabled:YES];
+		 
+		 [tollSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
+		 [tollSegment setEnabled:YES];
+	 }
 	 }
 	 
-	 else {
-		 [driverPassengerSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];//lx
-		 [driverPassengerSegment setEnabled:YES];
-	 }
+	 
  }//*lx
 	if (pickerView.tag == 1) {
 		switch (row) {

@@ -314,6 +314,13 @@
 	
 	request.predicate = [NSPredicate predicateWithFormat:@"purpose == %@", @""];
 	NSInteger countPendingLocalTrip = [tripManager.managedObjectContext countForFetchRequest:request error:&error];
+	//[LIU0402]
+	NSCalendar *calendar = [NSCalendar currentCalendar];
+	NSDateComponents *components = [calendar components:(NSYearCalendarUnit | NSMonthCalendarUnit ) fromDate:[NSDate date]];
+	//create a date with these components
+	NSDate *todayDate = [calendar dateFromComponents:components];
+	request.predicate = [NSPredicate predicateWithFormat:@"startTime >= %@", todayDate];
+	NSInteger countTodayTrip = [tripManager.managedObjectContext countForFetchRequest:request error:&error];
 	// [LIU] add header button "Start" in the saved trip table
 	UIButton *headerButton = [UIButton buttonWithType:UIButtonTypeCustom];
 	// [LIU] set button frame
@@ -336,12 +343,14 @@
 	//[LIU] link button to the tableview
 	//self.tableView.tableHeaderView = headerButton;
 	//[LIU] there are more info need to show in header part, change it as UIView, then we can add anything we want.
-	UIView *headerView = [[UIView alloc] initWithFrame:CGRectMake(10, 0, self.view.bounds.size.width-20, 120)];
-	labelView = [[UILabel alloc] initWithFrame:CGRectMake(15, 50, self.view.bounds.size.width-20, 60)];
+	UIView *headerView = [[UIView alloc] initWithFrame:CGRectMake(10, 0, self.view.bounds.size.width-20, 150)];
+	labelView = [[UILabel alloc] initWithFrame:CGRectMake(15, 50, self.view.bounds.size.width-20, 90)];
 	//UILabel *labelView = [[UILabel alloc] init];
 	labelView.numberOfLines = 0;
-	labelView.text = [NSString stringWithFormat:@"Here are %ld trips loaded to local. %ld of them are pending to add detailed information. Latest refresh request gets %d new trips.", countAllLocalTrip ,countPendingLocalTrip,
-					  (int)countNewTrips];
+//	labelView.text = [NSString stringWithFormat:@"Here are %ld trips loaded to local. %ld of them are pending to add detailed information. Latest refresh request gets %d new trips.", countAllLocalTrip ,countPendingLocalTrip,
+//					  (int)countNewTrips];
+	//[LIU0402]modify the warning message
+	labelView.text = [NSString stringWithFormat:@"We have identified %ld trips you might have made today. Please review each trip and confirm if you made the trip. If you did, please be sure to click the  “Provide Details”  button to answer the questions about the trip.", countTodayTrip];
 	labelView.font =[UIFont fontWithName:@"Helvetica-Bold" size:15];
 	labelView.textColor = [UIColor colorWithRed:(188/255.f) green:(188/255.f) blue:(188/255.f) alpha:1.0];
 	[headerView addSubview:labelView];
@@ -375,13 +384,7 @@
    break;
   default:
   {}
-   UIAlertView *alert = [[UIAlertView alloc] initWithTitle: [NSString stringWithFormat:@"Please review the %ld trips identified for your travel day and answer a few questions for each trip by selecting the trip find from the list." ,countPendingLocalTrip]
-               message:nil
-												  delegate:self
-										 cancelButtonTitle:@"OK"
-										 otherButtonTitles:nil];
-			//[LIU0327] turn on
-			[alert show];
+
    
 	}
 	

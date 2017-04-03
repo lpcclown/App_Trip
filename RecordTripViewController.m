@@ -573,13 +573,26 @@
 		NSArray *serverFeedback = [NSJSONSerialization JSONObjectWithData:responseData options:0 error:nil];
 		//NSString *serverFeedbackString = [serverFeedback objectForKey:@"Result"];
 		
+		//[LIU0402] show the pending view alert only after click finish button
+		FloridaTripTrackerAppDelegate *appDelegate = (FloridaTripTrackerAppDelegate *)[[UIApplication sharedApplication]delegate];
+		NSManagedObjectContext *context = [appDelegate managedObjectContext];
+		NSEntityDescription *entity = [NSEntityDescription entityForName:@"Trip" inManagedObjectContext:context];
+		[request setEntity:entity];
+		request.predicate = [NSPredicate predicateWithFormat:@"purpose == %@", @""];
+		NSInteger countPendingLocalTrip = [context countForFetchRequest:request error:nil];
+		UIAlertView *pendingTripAlert = [[UIAlertView alloc] initWithTitle: [NSString stringWithFormat:@"Please review the %ld trips identified for your travel day and answer a few questions for each trip by selecting the trip from the list." ,countPendingLocalTrip]
+																   message:nil
+																  delegate:self
+														 cancelButtonTitle:@"OK"
+														 otherButtonTitles:nil];
+		[pendingTripAlert show];
+		
 		UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"Confirmation"
 														message:[NSString stringWithFormat:@"%ld trips generated from server model.", (long)tripsCount]
 													   delegate:self
 											  cancelButtonTitle:@"OK"
 											  otherButtonTitles:nil];
 		[alert show];
-		
 		
 		//[LIU] According to server's feedback to decide if empty table
 		if (serverFeedback.count != 0) {
@@ -604,9 +617,6 @@
 			[alert show];
 			
 		}
-		
-
-
 	}else{
 		
 		UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"Confirmation"
@@ -952,6 +962,7 @@
 			NSTimeInterval distanceBetweenDates = [[NSDate date] timeIntervalSinceDate:earliestLocalCoord.recorded];
 			//[LIU0331] after 2 hours to enable
 			if(distanceBetweenDates>60 * 60 * 2){
+			//if(distanceBetweenDates>5){
 				startButton.enabled = YES;
 				startButton.alpha = 1.0;
 			}

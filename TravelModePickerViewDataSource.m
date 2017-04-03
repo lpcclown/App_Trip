@@ -43,7 +43,7 @@
 		travelModeBicycle= @"Bicycle";
 		travelModeWalked= @"Walked";
 		travelModeOther= @"Other Method";
-		travelModes= [[NSMutableArray alloc] initWithObjects:@"",travelModePersonalbigVehicle, travelModePersonalsmallVehicle, travelModePublicBus, travelModeSchoolBus, travelModeTaxiCab, travelModeCarService,travelModeWalked, travelModeOther,nil];
+		travelModes= [[NSMutableArray alloc] initWithObjects:@"",travelModePersonalbigVehicle, travelModePersonalsmallVehicle, travelModePublicBus, travelModeSchoolBus, travelModeTaxiCab, travelModeCarService,travelModeBicycle,travelModeWalked, travelModeOther,nil];//lx 0401
 		
 		//*lx
 	}

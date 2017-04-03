@@ -49,6 +49,7 @@
 @implementation MapViewController
 
 @synthesize doneButton, flipButton, infoView, trip;
+@synthesize viewTrips,addDetailInfo,removeTrip;//lx 0401
 
 
 /*
@@ -170,9 +171,17 @@ clickedButtonAtIndex:(NSInteger)buttonIndex{
 	[alert show];
 
 }
+//lx 0401
+- (IBAction)viewtrips:(id)sender {
+ 
+ FloridaTripTrackerAppDelegate *delegate= [[UIApplication sharedApplication] delegate];
+ NSManagedObjectContext *managedContext= [delegate managedObjectContext];
+ [managedContext deleteObject:self.trip];
+ // Commit the change.
+ [self.navigationController popViewControllerAnimated:YES];
+}
 
-
-//[LIU]Remove trip TODO
+//[LIU]Remove trip
 - (IBAction)removeTrip:(id)sender
 {
 	UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"Delete Trip"
@@ -365,6 +374,7 @@ clickedButtonAtIndex:(NSInteger)buttonIndex{
 					pin.first = YES;
 					pin.title = @"Start";
 					pin.subtitle = [dateFormatter stringFromDate:coord.recorded];
+					//[mapView selectAnnotation:pin animated:YES];
 					//NSLog(@"%@ ......first recorded time......", coord);
 					// initialize min/max values to the first coord
 					minLat = coord.latitude;
@@ -402,6 +412,7 @@ clickedButtonAtIndex:(NSInteger)buttonIndex{
 			pin.last = YES;
 			pin.title = @"End";
 			pin.subtitle = [dateFormatter stringFromDate:last.recorded];
+			//[mapView selectAnnotation:pin animated:YES];
 		}
 		
 		// if we had at least 1 coord
@@ -509,17 +520,20 @@ clickedButtonAtIndex:(NSInteger)buttonIndex{
 		if ( [(MapCoord*)annotation first] )
 		{
 			// Try to dequeue an existing pin view first.
-			MKPinAnnotationView* pinView = (MKPinAnnotationView*)[mapView
+			//MKPinAnnotationView* pinView = (MKPinAnnotationView*)[mapView
+			//													  dequeueReusableAnnotationViewWithIdentifier:@"FirstCoord"];
+			MKAnnotationView* pinView = (MKPinAnnotationView*)[mapView
 																  dequeueReusableAnnotationViewWithIdentifier:@"FirstCoord"];
 			
 			if ( !pinView )
 			{
 				// If an existing pin view was not available, create one
-				pinView = [[MKPinAnnotationView alloc] initWithAnnotation:annotation reuseIdentifier:@"FirstCoord"];
-				
-				pinView.animatesDrop = YES;
+				//pinView = [[MKPinAnnotationView alloc] initWithAnnotation:annotation reuseIdentifier:@"FirstCoord"];
+				pinView = [[MKAnnotationView alloc] initWithAnnotation:annotation reuseIdentifier:@"FirstCoord"];
+				//pinView.animatesDrop = YES;
 				pinView.canShowCallout = YES;
-				pinView.pinColor = MKPinAnnotationColorGreen;
+				//pinView.pinColor = MKPinAnnotationColorGreen;
+				pinView.image = [UIImage imageNamed:@"PinGreen.png"];
 			}
 			
 			annotationView = pinView;
@@ -527,17 +541,19 @@ clickedButtonAtIndex:(NSInteger)buttonIndex{
 		else if ( [(MapCoord*)annotation last] )
 		{
 			// Try to dequeue an existing pin view first.
-			MKPinAnnotationView* pinView = (MKPinAnnotationView*)[mapView
+			//MKPinAnnotationView* pinView = (MKPinAnnotationView*)[mapView
+			//													  dequeueReusableAnnotationViewWithIdentifier:@"LastCoord"];
+			MKAnnotationView* pinView = (MKPinAnnotationView*)[mapView
 																  dequeueReusableAnnotationViewWithIdentifier:@"LastCoord"];
-			
 			if ( !pinView )
 			{
 				// If an existing pin view was not available, create one
-				pinView = [[MKPinAnnotationView alloc] initWithAnnotation:annotation reuseIdentifier:@"LastCoord"];
-				
-				pinView.animatesDrop = YES;
+				//pinView = [[MKPinAnnotationView alloc] initWithAnnotation:annotation reuseIdentifier:@"LastCoord"];
+				pinView = [[MKAnnotationView alloc] initWithAnnotation:annotation reuseIdentifier:@"LastCoord"];
+				//pinView.animatesDrop = YES;
 				pinView.canShowCallout = YES;
-				pinView.pinColor = MKPinAnnotationColorRed;
+				//pinView.pinColor = MKPinAnnotationColorRed;
+				pinView.image = [UIImage imageNamed:@"PinRed.png"];
 			}
 			
 			annotationView = pinView;
@@ -554,19 +570,6 @@ clickedButtonAtIndex:(NSInteger)buttonIndex{
 				annotationView = [[MKAnnotationView alloc] initWithAnnotation:annotation reuseIdentifier:@"MapCoord"];
 				
 				annotationView.image = [UIImage imageNamed:@"MapCoord.png"];
-				
-				/*
-				 pinView.pinColor = MKPinAnnotationColorPurple;
-				 pinView.animatesDrop = YES;
-				 pinView.canShowCallout = YES;
-				 */
-				
-				/*
-				 // Add a detail disclosure button to the callout.
-				 UIButton* rightButton = [UIButton buttonWithType:UIButtonTypeDetailDisclosure];
-				 [rightButton addTarget:self action:@selector(myShowDetailsMethod:) forControlEvents:UIControlEventTouchUpInside];
-				 pinView.rightCalloutAccessoryView = rightButton;
-				 */
 			}
 		}
 		

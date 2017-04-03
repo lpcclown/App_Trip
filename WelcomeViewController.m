@@ -21,9 +21,9 @@
     [super viewDidLoad];
     // Do any additional setup after loading the view from its nib.
 	
-	[textView setText:@"Please enter your personal details so we can learn a bit about you.\n\nThen, try to use MyTripDiary every time you go on a trip for 7 days. Your trip routes will be sent to the Florida Department Of Transportation for a Travel Survey!\n\nThanks,\nMyTripDiary Team"];
+	[textView setText:@"Please enter your household ID to begin. Be sure to select your name from the list of your household members to record your travel.\n\nThen, try to use MyTripDiary every time you go on a trip for 7 days. Your trip routes will be sent to the Florida Department Of Transportation for a Travel Survey!\n\nThanks,\nMyTripDiary Team"];
 	
-	[self setTitle:@"Welcome to MyTripDiary App!"];
+	[self setTitle:@"Welcome to MyTripDiary App!"];//lx 0401
 }
 
 - (void)didReceiveMemoryWarning {

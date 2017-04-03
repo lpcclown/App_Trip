@@ -49,6 +49,9 @@
 @property (nonatomic, strong) UIBarButtonItem *doneButton;
 @property (nonatomic, strong) UIBarButtonItem *flipButton;
 @property (nonatomic, strong) UIView *infoView;
+@property (weak, nonatomic) IBOutlet UIButton *viewTrips;
+@property (weak, nonatomic) IBOutlet UIButton *addDetailInfo;
+@property (weak, nonatomic) IBOutlet UIButton *removeTrip;//lx 0401
 
 - (id)initWithTrip:(Trip *)trip;
 

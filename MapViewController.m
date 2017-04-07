@@ -49,7 +49,7 @@
 @implementation MapViewController
 
 @synthesize doneButton, flipButton, infoView, trip;
-@synthesize viewTrips,addDetailInfo,removeTrip;//lx 0401
+@synthesize viewTrips,addDetailInfo,removeTrip,tripInfo;//lx 0401
 
 
 /*
@@ -175,9 +175,6 @@ clickedButtonAtIndex:(NSInteger)buttonIndex{
 - (IBAction)viewtrips:(id)sender {
  
  FloridaTripTrackerAppDelegate *delegate= [[UIApplication sharedApplication] delegate];
- NSManagedObjectContext *managedContext= [delegate managedObjectContext];
- [managedContext deleteObject:self.trip];
- // Commit the change.
  [self.navigationController popViewControllerAnimated:YES];
 }
 
@@ -342,17 +339,43 @@ clickedButtonAtIndex:(NSInteger)buttonIndex{
 		double mph = ( [trip.distance doubleValue] / 1609.344 ) / ( [trip.duration doubleValue] / 3600. );
 		NSDate *outputDate = [[NSDate alloc] initWithTimeInterval:(NSTimeInterval)[trip.duration doubleValue]
 														sinceDate:fauxDate];
-		self.navigationItem.prompt = [NSString stringWithFormat:@"elapsed: %@ ~ %@",
-									  [inputFormatter stringFromDate:outputDate],
-									  [dateFormatter stringFromDate:[trip startTime]]];
+		//[LIU0406]
+//		self.navigationItem.prompt = [NSString stringWithFormat:@"elapsed: %@ ~ %@",
+//									  [inputFormatter stringFromDate:outputDate],
+//									  [dateFormatter stringFromDate:[trip startTime]]];
 		
 //		self.title = [NSString stringWithFormat:@"%.1f mi ~ %.1f mph elapsed: %@ ~ %@",
 //					  [trip.distance doubleValue] / 1609.344, mph, [inputFormatter stringFromDate:outputDate],
 //					  [dateFormatter stringFromDate:[trip startTime]] ];
 		
-		self.title = [NSString stringWithFormat:@"%.1f mi ~ %.1f mph",
-					  [trip.distance doubleValue] / 1609.344, mph];
+//		self.title = [NSString stringWithFormat:@"%.1f mi ~ %.1f mph",
+//					  [trip.distance doubleValue] / 1609.344, mph];
+			
+			
 		
+		//[LIU0406]
+			self.title = [NSString stringWithFormat:@"MyTripDiary"];
+			
+			tripInfo.lineBreakMode = NSLineBreakByWordWrapping;
+			tripInfo.numberOfLines = 0;
+			
+			NSDateFormatter *dateFormat = [[NSDateFormatter alloc] init];
+			[dateFormat setDateFormat:@"MM/dd/yyyy, hh:mm:ss a"];
+			
+			
+			NSLocale *locale = [[NSLocale alloc] initWithLocaleIdentifier:@"en_US"];
+			[dateFormat setLocale:locale];
+			
+			//startTime && stopTime
+			NSString *startTime=[dateFormat stringFromDate:trip.startTime];
+			NSString *stopTime=[dateFormat stringFromDate:trip.stopTime];
+			if( trip.purpose.length > 0){
+				self.tripInfo.text = [NSString stringWithFormat:@"Start Time: %@ \nEnd   Time: %@\nPurpose: %@", startTime, stopTime, trip.purpose];}
+			else{
+							self.tripInfo.text = [NSString stringWithFormat:@"Start Time: %@ \nEnd Time: %@", startTime, stopTime];
+			
+			}
+
 		for ( Coord *coord in sortedCoords )
 		{
 			// only plot unique coordinates to our map for performance reasons

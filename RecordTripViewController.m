@@ -243,7 +243,7 @@
 		speedCounter.text = @"0.0 mph";
     
     // check the battery level and stop recording if low
-    [self batteryLevelLowStartPressed:FALSE];
+    //[self batteryLevelLowStartPressed:FALSE];
 }
 
 
@@ -770,8 +770,9 @@
     }
 	
     // if the battery level is low then NM
-    if ([self batteryLevelLowStartPressed:TRUE])
-        return;
+    //if ([self batteryLevelLowStartPressed:TRUE])
+	//   return;
+	
         
 	// start the timer if needed
 	if ( timer == nil )
@@ -817,6 +818,8 @@
     // Start the location manager.
 	// [LIU0314]
 	[locationManager setDelegate:self];
+	// [LIU0404] clear all the annoatations on the map.
+	[mapView removeAnnotations:mapView.annotations];
 	
 	[[self getLocationManager] startUpdatingLocation];
 
@@ -962,7 +965,7 @@
 			NSTimeInterval distanceBetweenDates = [[NSDate date] timeIntervalSinceDate:earliestLocalCoord.recorded];
 			//[LIU0331] after 2 hours to enable
 			if(distanceBetweenDates>60 * 60 * 2){
-			//if(distanceBetweenDates>5){
+			//if(distanceBetweenDates>2){
 				startButton.enabled = YES;
 				startButton.alpha = 1.0;
 			}

@@ -69,6 +69,20 @@
 	instruction.backgroundColor = [UIColor blackColor];
 	instruction.textColor = [UIColor whiteColor];
 	instruction.editable = NO;
+//	NSMutableAttributedString *attributedString = [[NSMutableAttributedString alloc] initWithString:@"before after"];
+//	NSTextAttachment *textAttachment = [[NSTextAttachment alloc] init];
+//	textAttachment.image = [UIImage imageNamed:@"SurveyLogo1.jpg"];
+//	
+//	CGFloat oldWidth = textAttachment.image.size.width;
+//	
+//	//I'm subtracting 10px to make the image display nicely, accounting
+//	//for the padding inside the textView
+//	CGFloat scaleFactor = oldWidth / (instruction.frame.size.width - 10);
+//	textAttachment.image = [UIImage imageWithCGImage:textAttachment.image.CGImage scale:scaleFactor orientation:UIImageOrientationUp];
+//	NSAttributedString *attrStringWithImage = [NSAttributedString attributedStringWithAttachment:textAttachment];
+//	[attributedString replaceCharactersInRange:NSMakeRange(6, 1) withAttributedString:attrStringWithImage];
+//	instruction.attributedText = attributedString;
+	
 }
 
 

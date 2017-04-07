@@ -316,9 +316,13 @@
 	NSInteger countPendingLocalTrip = [tripManager.managedObjectContext countForFetchRequest:request error:&error];
 	//[LIU0402]
 	NSCalendar *calendar = [NSCalendar currentCalendar];
-	NSDateComponents *components = [calendar components:(NSYearCalendarUnit | NSMonthCalendarUnit ) fromDate:[NSDate date]];
+	NSDateComponents *components = [calendar components:(NSCalendarUnitYear | NSCalendarUnitMonth  |NSCalendarUnitDay) fromDate:[NSDate date]];//lx 0405
 	//create a date with these components
-	NSDate *todayDate = [calendar dateFromComponents:components];
+	NSLog(@"components is ----%@, and NSCalendarUnitHour %zi", components,NSCalendarUnitDay);
+	NSDate *todayDate = [calendar dateFromComponents:components];//fix 04:00:00
+	
+
+	NSLog(@"todayDate is ----%@", todayDate);
 	request.predicate = [NSPredicate predicateWithFormat:@"startTime >= %@", todayDate];
 	NSInteger countTodayTrip = [tripManager.managedObjectContext countForFetchRequest:request error:&error];
 	// [LIU] add header button "Start" in the saved trip table
@@ -351,7 +355,7 @@
 //					  (int)countNewTrips];
 	//[LIU0402]modify the warning message
 	labelView.text = [NSString stringWithFormat:@"We have identified %ld trips you might have made today. Please review each trip and confirm if you made the trip. If you did, please be sure to click the  “Provide Details”  button to answer the questions about the trip.", countTodayTrip];
-	labelView.font =[UIFont fontWithName:@"Helvetica-Bold" size:15];
+	labelView.font =[UIFont fontWithName:@"Helvetica-Bold" size:13];//lx 0405
 	labelView.textColor = [UIColor colorWithRed:(188/255.f) green:(188/255.f) blue:(188/255.f) alpha:1.0];
 	[headerView addSubview:labelView];
 	[headerView addSubview:headerButton];
@@ -483,7 +487,7 @@
 
 
 - (void)viewWillAppear:(BOOL)animated
-{	self.navigationController.interactivePopGestureRecognizer.enabled = NO;//lx 0327
+{	self.navigationController.interactivePopGestureRecognizer.enabled = YES;//lx 0404
 	//self.navigationItem.prompt = nil;
 	UIBarButtonItem * item = [[UIBarButtonItem alloc] initWithCustomView:[[UIImageView alloc] initWithImage:[UIImage imageNamed:@"FDOT"]]];
 	self.navigationItem.rightBarButtonItem = item;
@@ -580,8 +584,9 @@
 // display map view
 - (void)displaySelectedTripMap
 {
-	loading		= [LoadingView loadingViewInView:self.parentViewController.view];
-	loading.tag = 909;
+	//lx 0404 turn off the loading warning view
+	//loading		= [LoadingView loadingViewInView:self.parentViewController.view];
+	//loading.tag = 909;
 	
 	[self performSelectorInBackground:@selector(_recalculateDistanceForSelectedTripMap) withObject:nil];
 }

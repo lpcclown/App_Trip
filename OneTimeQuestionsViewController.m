@@ -182,6 +182,10 @@
 			[selfEmployedSegment setEnabled:YES];
 			[licenseSegment setEnabled:YES];
 			[driverlicense setEnabled:YES];//lx
+			User *user= [self getNewOrExistingUser];
+//			NSLog(@"[[_user age]intValue]] is %@",[user age]);
+//			NSLog(@"[[_user driverlicense]intValue]] is %@",[user driverlicense]);
+			[driverlicense setSelectedSegmentIndex:[[user driverlicense]intValue]];//lx 0405
 		}
 	}
 }
@@ -716,8 +720,6 @@
 		[genderinfo setSelectedSegmentIndex:0];	}
 	else
 		[genderinfo setSelectedSegmentIndex:1];
-	[driverlicense setSelectedSegmentIndex:[[user driverlicense]intValue]];
-	
 	
 	//*lx
 	
@@ -737,6 +739,16 @@
 			[ageinfo selectRow:i inComponent:0 animated:NO];
 		}
 	}
+	
+	
+	if ([[user age] compare:[[ageDataSource dataArray] objectAtIndex:0] ]== NSOrderedSame || [[user age] compare:[[ageDataSource dataArray] objectAtIndex:1] ]== NSOrderedSame) {
+		[driverlicense setSelectedSegmentIndex:0];
+		[driverlicense setEnabled:NO];
+	}else {
+		[driverlicense setSelectedSegmentIndex:[[user driverlicense]intValue]];//lx 0405
+		[driverlicense setEnabled:YES];
+	}
+
 	
 	NSString *genderString =([genderinfo selectedSegmentIndex] == 0) ? (@"M") : (@"F");
 	NSString *ageString = [[ageinfo delegate] pickerView:ageinfo titleForRow:[ageinfo selectedRowInComponent:0] forComponent:0];

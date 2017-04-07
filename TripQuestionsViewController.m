@@ -158,7 +158,7 @@
 			
 			if ( [housholdMemberselected length] != 0){
 				housholdMemberselected = [housholdMemberselected substringToIndex:[housholdMemberselected length]-1];
-				NSLog(@"housholdMemberselected finally:%@,so total householdmembers %@is on this trip", housholdMemberselected,[NSNumber numberWithInteger:numofhousholdMemberselected] );
+				NSLog(@"were any with you? is %@,housholdMemberselected finally:%@,so total householdmembers %@is on this trip",(([householdmembersSegment selectedSegmentIndex] == 0) ? [NSNumber numberWithInt:0] : [NSNumber numberWithInt:1]), housholdMemberselected,[NSNumber numberWithInteger:numofhousholdMemberselected] );
 			}
 			
 			//[LIU] mark out furthur logic
@@ -179,24 +179,33 @@
 			//[LIU]
 			if ([startTimeChange.text rangeOfString:@"M"].location == NSNotFound) {
 				//24h
-				[dateFormat setDateFormat:@"dd/MM/yyyy, HH:mm:ss"];
+				[dateFormat setDateFormat:@"MM/dd/yyyy, hh:mm:ss a"];
 			} else {
 				//12h
-				[dateFormat setDateFormat:@"dd/MM/yyyy, hh:mm:ss a"];
+				[dateFormat setDateFormat:@"MM/dd/yyyy, hh:mm:ss a"];
 			}
 			NSLocale *locale = [[NSLocale alloc] initWithLocaleIdentifier:@"en_US"];
 			[dateFormat setLocale:locale];
+			
+			//startTime && stopTime
 			directedTrip.startTime=[dateFormat dateFromString:startTimeChange.text];
 			directedTrip.stopTime=[dateFormat dateFromString:endTimechange.text];
+			//travelBy
 			directedTrip.travelBy = [[travelModePicker delegate] pickerView:travelModePicker titleForRow:[travelModePicker selectedRowInComponent:0] forComponent:0];
-			//householdmembersSegment
+			//isMembers
 			if([householdmembersSegment selectedSegmentIndex] !=-1){
 				
 				directedTrip.isMembers =(([householdmembersSegment selectedSegmentIndex] == 0) ? [NSNumber numberWithInt:0] : [NSNumber numberWithInt:1]);
 			}else directedTrip.isMembers = @-1;
-		 
-			directedTrip.familyMembers = housholdMemberselected;
-			directedTrip.members = [NSNumber numberWithInteger:numofhousholdMemberselected] ;
+			//familyMembers && members (how many seleted)
+			if ([directedTrip.isMembers  isEqual: @1]) {
+				directedTrip.familyMembers = housholdMemberselected;
+				directedTrip.members = [NSNumber numberWithInteger:numofhousholdMemberselected] ;
+			}else{
+				directedTrip.familyMembers = @"";
+				directedTrip.members = @0;
+
+			}
 			
 			//isnonMembers
 			if([nonHouseholdmembersSegment selectedSegmentIndex] !=-1){
@@ -204,15 +213,17 @@
 			}else
 				directedTrip.isnonMembers = @-1;
 			
-			directedTrip.nonMembers =[NSNumber numberWithInt:[[nonHouseholdMembers text] intValue]];
-			//driverType
-			
-			
-			if([driverPassengerSegment selectedSegmentIndex] !=-1){
-				
-		  directedTrip.driverType=([driverPassengerSegment selectedSegmentIndex] == 0) ? (@"Driver") : (@"Passenger") ;
+			//nonMembers
+			if ([[nonHouseholdMembers text]  isEqual: @""]) {
+				directedTrip.nonMembers=@0;
+				NSLog(@"directedTrip.nonMembers is: %@", directedTrip.nonMembers);
 			}else
-				directedTrip.driverType = @"";
+				directedTrip.nonMembers =[NSNumber numberWithInt:[[nonHouseholdMembers text] intValue]];
+			
+			//driverType
+			if([driverPassengerSegment selectedSegmentIndex] !=-1){
+				directedTrip.driverType=([driverPassengerSegment selectedSegmentIndex] == 0) ? (@"Driver") : (@"Passenger") ;
+			}else directedTrip.driverType = @"";
 			
 			//toll
 			if([tollSegment selectedSegmentIndex] !=-1){
@@ -220,6 +231,7 @@
 				directedTrip.toll =(([tollSegment selectedSegmentIndex] == 0) ? [NSNumber numberWithInt:0] : [NSNumber numberWithInt:1]);
 			}else
 				directedTrip.toll = @-1;
+			
 			//[LIU]
 			//PickerViewDataSource *purposeAnswer= (PickerViewDataSource *)[activityPicker dataSource];
 			//	NSString *otherText= [otherTripPurposeText text];
@@ -228,6 +240,8 @@
 			//		}
 			directedTrip.purpose = [[activityPicker delegate] pickerView:activityPicker titleForRow:[activityPicker selectedRowInComponent:0] forComponent:0];
 			
+			
+			NSLog(@"upload trip index as follows:\nstartTime is: %@\nstopTime is: %@\ntravelBy is: %@\nisMembers is: %@\nfamilyMembers is: %@\nmembers is: %@\nisnonMembers is: %@\nnonMembers is: %@\ndriverType is: %@\ntoll is: %@", startTimeChange.text,endTimechange.text, directedTrip.travelBy, directedTrip.isMembers, directedTrip.familyMembers, directedTrip.members, directedTrip.isnonMembers, directedTrip.nonMembers, directedTrip.driverType, directedTrip.toll);
 			
 			//[LIU] save updated trip into server
 			NSFetchRequest *userRequest = [[NSFetchRequest alloc] init];
@@ -328,7 +342,24 @@
 	[tollCost resignFirstResponder];
 }
 
+
 - (IBAction)segmentChanged:(id)sender {
+	
+	if (nonHouseholdmembersSegment.selectedSegmentIndex == 0) {
+		nonHouseholdMembers.text=@"0";
+		nonHouseholdMembers.enabled = NO;
+	}else if (nonHouseholdmembersSegment.selectedSegmentIndex == 1) {
+		NSLog(@"[[trip nonMembers] intValue]is %@",[trip nonMembers]);
+		if ([[trip nonMembers] intValue]  <= 0) {
+			nonHouseholdMembers.text=@"";
+			nonHouseholdMembers.enabled=YES;
+			
+		}else
+		{nonHouseholdMembers.text=[[trip nonMembers] stringValue];
+			nonHouseholdMembers.enabled=YES;
+		}
+	}
+	
 	if ([sender tag] == 1) {
 		if ([sender selectedSegmentIndex] == 1) {
 			[tollCost setText:@""];
@@ -351,7 +382,6 @@
 - (id)initWithTrip:(Trip *)tripFromMapView
 {
 	
-
 	//if (self = [super init]) {
 	if (self = [self initWithNibName:@"TripPurposePicker" bundle:nil]) {
 		NSLog(@"TripQuestionViewController initWithTrip");
@@ -363,21 +393,53 @@
  
 	//[LIU]
 	if ([startTimeChange.text rangeOfString:@"M"].location == NSNotFound) {
-	//24h
-	[dateFormat setDateFormat:@"dd/MM/yyyy, HH:mm:ss"];
+		//24h
+		[dateFormat setDateFormat:@"MM/dd/yyyy, hh:mm:ss a"];
 	} else {
-	//12h
-	[dateFormat setDateFormat:@"dd/MM/yyyy, hh:mm:ss a"];
+		//12h
+		[dateFormat setDateFormat:@"MM/dd/yyyy, hh:mm:ss a"];
 	}
 	NSLocale *locale = [[NSLocale alloc] initWithLocaleIdentifier:@"en_US"];
 	[dateFormat setLocale:locale];
 	
+	NSLog(@"[[trip travelBy] intValue]%@",[trip travelBy]);
+	NSLog(@"[[trip isMembers] intValue]%@",[trip isMembers]);
+	NSLog(@"[[trip familyMembers] intValue]%@",[trip familyMembers]);
+	NSLog(@"[[trip isnonMembers] intValue]%@",[trip isnonMembers]);
+	
+	NSLog(@"[[trip nonMembers] intValue]%@",[trip nonMembers]);
+	
+	NSLog(@"[[trip driverType] intValue]%@",[trip driverType]);
+	NSLog(@"[[trip toll] intValue]%@",[trip toll]);
+	NSLog(@"[[trip purpose] intValue]%@",[trip purpose]);
+	
+	if([trip.purpose length] == 0)
+	{
+		[householdmembersSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
+		[householdmembersSegment setEnabled:NO];
+		[nonHouseholdmembersSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
+		[nonHouseholdmembersSegment setEnabled:NO];
+		[nonHouseholdMembers setEnabled:NO];
+		[driverPassengerSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
+		[driverPassengerSegment setEnabled:NO];
+		[tollSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
+		[tollSegment setEnabled:NO];
+		
+	}
+	
 	startTimeChange.text = [dateFormat stringFromDate: trip.startTime];
 	endTimechange.text= [dateFormat stringFromDate: trip.stopTime];//lx 0401
- 
 	NSLog(@"screen display time:%@",startTimeChange.text);
 	NSLog(@"screen display time:%@",endTimechange.text);
-	
+ 
+	NSDate * date1 = [dateFormat dateFromString:startTimeChange.text];
+	NSDate * date2 = [dateFormat dateFromString:endTimechange.text];
+
+	[ startDatePicker setDate:date1 animated:YES];
+	[ endDatePicker setDate:date2 animated:YES];//lx 0405
+
+
+
 	//	startTimeChange.text= [NSDateFormatter localizedStringFromDate:trip.startTime
 	//														 dateStyle:NSDateFormatterShortStyle
 	//														 timeStyle:NSDateFormatterMediumStyle];
@@ -389,22 +451,21 @@
 	for (int i= 0; i < [[travelBy travelModes] count]; i++) {
 		if ([[trip travelBy] compare:[[travelBy travelModes] objectAtIndex:i]] == NSOrderedSame) {
 			[travelModePicker selectRow:i inComponent:0 animated:NO];
-		}else
-	{[driverPassengerSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
-		[driverPassengerSegment setEnabled:NO];
-	}
+		}
+		
 	}
 	
 	[householdmembersSegment setSelectedSegmentIndex:[[trip isMembers] intValue]];
-	
 	[nonHouseholdmembersSegment setSelectedSegmentIndex:[[trip isnonMembers] intValue]];
 	nonHouseholdMembers.text=[trip.nonMembers stringValue];
 	
-	NSLog(@"[trip driverType] is %@",[trip driverType]);
-	NSLog(@"[trip toll] is %@",[trip toll]);
-	NSLog(@"[trip.nonMembers stringValue] is %@",[trip.nonMembers stringValue]);
-	//NSLog(@"[trip.members intValue] is%d",[trip.members intValue]);
-	if([trip.members intValue]<0){
+	if([trip.isMembers intValue]<=0){
+		numofhousholdMemberselected=0;
+	}
+	else
+		numofhousholdMemberselected=[trip.members intValue];
+	
+	if([trip.members intValue]<=0){
 		numofhousholdMemberselected=0;
 	}
 	else
@@ -412,6 +473,7 @@
 	
 	if([trip.isnonMembers intValue]<=0){
 		nonHouseholdMembers.text=@"0";
+		nonHouseholdMembers.enabled= NO;
 	}
 	else
 		nonHouseholdMembers.text=[trip.nonMembers stringValue];
@@ -494,16 +556,16 @@
 			NSArray *arrayFamilyMembersAdded = [[NSMutableArray alloc] initWithArray:familyMembersAdded];
 			for (int i = 0 ; i < arrayFamilyMembersAdded.count; i++) {
 				//for (int j = 0 ;j < dataArray1.count; j++){
-					if([[arrayFamilyMembersAdded objectAtIndex: i] caseInsensitiveCompare: [dataArray1 objectAtIndex:indexPath.row]] == NSOrderedSame){
-						NSLog(@"%@", [arrayFamilyMembersAdded objectAtIndex: i]);
-						NSLog(@"%@",[dataArray1 objectAtIndex:indexPath.row]);
-						//[LIU0314] Add the async to UISwith, otherwise cannot turn it on.
-						dispatch_async(dispatch_get_main_queue(), ^{
-							[switchView setOn:YES animated:YES];
-						});
-					}else{
-						[switchView setOn:NO animated:NO];
-					}
+				if([[arrayFamilyMembersAdded objectAtIndex: i] caseInsensitiveCompare: [dataArray1 objectAtIndex:indexPath.row]] == NSOrderedSame){
+					NSLog(@"%@", [arrayFamilyMembersAdded objectAtIndex: i]);
+					NSLog(@"%@",[dataArray1 objectAtIndex:indexPath.row]);
+					//[LIU0314] Add the async to UISwith, otherwise cannot turn it on.
+					dispatch_async(dispatch_get_main_queue(), ^{
+						[switchView setOn:YES animated:YES];
+					});
+				}else{
+					[switchView setOn:NO animated:NO];
+				}
 				//}
 			}
 			
@@ -527,6 +589,7 @@
 - (void)scrollViewDidScroll:(UIScrollView *)scrollView{
 	CGPoint point=scrollView.contentOffset;
 	cancel.frame= CGRectMake(0, point.y, cancel.bounds.size.width, 44 );
+	
 }
 //lx
 
@@ -580,7 +643,7 @@
 	
 	CGSize cg;
 	cg.height= saveButton.frame.size.height + saveButton.frame.origin.y + 20;
-	cg.width= scrollView.frame.size.width;
+	cg.width= saveButton.frame.size.width;
 	[scrollView setContentSize:cg];
 	
 	tmDataSource= [[TravelModePickerViewDataSource alloc] init];
@@ -613,7 +676,7 @@
 }
 
 -(void)viewWillAppear:(BOOL)animated{
-	nonHouseholdMembers.enabled = NO;
+
 	if([trip purpose].length == 0){
 		[householdmembersSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
 		[nonHouseholdmembersSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
@@ -633,16 +696,17 @@
 	
 	
 	NSLog(@"%@", housholdMemberselected);
-
+	
 }
 - (void)viewDidLoad
 {
 	[super viewDidLoad];
 	
 	
+    
 	self.title = NSLocalizedString(@"Trip Details", @"");
 	//lx
-
+	
 	FloridaTripTrackerAppDelegate *delegatea= [[UIApplication sharedApplication] delegate];
 	NSManagedObjectContext *managedContext = [delegatea managedObjectContext];
 	//[LIU] obtain familymember info from db
@@ -655,11 +719,11 @@
 	NSArray * familyMembersload = [familyMember componentsSeparatedByString: @","];
 	//[LIU0402]add predicate to filter out the self member
 	NSArray * newFamilyMembersload = [familyMembersload filteredArrayUsingPredicate: [NSPredicate predicateWithFormat:@"NOT(SELF beginswith %@)", person.name]];
-//	NSLog(@"New Family Members: %@",newFamilyMembersload);
+	//	NSLog(@"New Family Members: %@",newFamilyMembersload);
 	dataArray1 = [[NSMutableArray alloc] initWithArray:newFamilyMembersload];
-//	NSLog(@"Family Members: %@",dataArray1);
-//	NSLog(@"Person ID: %@",person.name);
-
+	//	NSLog(@"Family Members: %@",dataArray1);
+	//	NSLog(@"Person ID: %@",person.name);
+	
 	double tableheight=120;
 	if ([dataArray1 count]>3) {
 		tableheight=120;
@@ -675,6 +739,16 @@
 		householdmembersSegment.enabled = NO;
 	}
 	[DataTable setHidden:YES];
+	NSDateFormatter *dateFormat = [[NSDateFormatter alloc] init];
+	//[LIU]
+	if ([startTimeChange.text rangeOfString:@"M"].location == NSNotFound) {
+		//24h
+		[dateFormat setDateFormat:@"MM/dd/yyyy, hh:mm:ss a"];
+	} else {
+		//12h
+		[dateFormat setDateFormat:@"MM/dd/yyyy, hh:mm:ss a"];
+	}
+	
 	//[LIU0314] add date picker
 	self.startDatePicker = [[UIDatePicker alloc] initWithFrame:CGRectZero];
 	[self.startDatePicker setDatePickerMode:UIDatePickerModeDateAndTime];
@@ -742,8 +816,8 @@
 	
 	
 	//*lx
-
-
+	
+	
 	tripDescription.font = [UIFont fontWithName:@"Arial" size:16];
 	//[self.view addSubview:description];
 	[fareCost setText:@""];
@@ -763,11 +837,13 @@
 	//[LIU]
 	if ([startTimeChange.text rangeOfString:@"M"].location == NSNotFound) {
 		//24h
-		[dateFormat setDateFormat:@"dd/MM/yyyy, HH:mm:ss"];
+		[dateFormat setDateFormat:@"MM/dd/yyyy, hh:mm:ss a"];
 	} else {
 		//12h
-		[dateFormat setDateFormat:@"dd/MM/yyyy, hh:mm:ss a"];
+		[dateFormat setDateFormat:@"MM/dd/yyyy, hh:mm:ss a"];
 	}
+	NSLocale *locale = [[NSLocale alloc] initWithLocaleIdentifier:@"en_US"];
+	[dateFormat setLocale:locale];
 	self.startTimeChange.text = [dateFormat stringFromDate:datePickerInput.date];
 }
 - (void)onStopDatePickerValueChanged:(UIDatePicker *)datePickerInput
@@ -776,13 +852,14 @@
 	//[LIU]
 	if ([endTimechange.text rangeOfString:@"M"].location == NSNotFound) {
 		//24h
-		[dateFormat setDateFormat:@"dd/MM/yyyy, HH:mm:ss"];
+		[dateFormat setDateFormat:@"MM/dd/yyyy, hh:mm:ss a"];
 	} else {
 		//12h
-		[dateFormat setDateFormat:@"dd/MM/yyyy, hh:mm:ss a"];
+		[dateFormat setDateFormat:@"MM/dd/yyyy, hh:mm:ss a"];
 	}
 	self.endTimechange.text = [dateFormat stringFromDate:datePickerInput.date];
 }
+
 
 // called after the view controller's view is released and set to nil.
 // For example, a memory warning which causes the view to be purged. Not invoked as a result of -dealloc.
@@ -810,19 +887,16 @@
 	if (householdmembersSegment.selectedSegmentIndex == 0)
 	{
 		[DataTable setHidden:YES];
-	}else if(familyMember.length ==  0){
-		
-		[DataTable setHidden:YES];
-		
-	}else [DataTable setHidden:NO];
+
+	}else {
+		if(familyMember.length ==  0){
+			
+			[DataTable setHidden:YES];
+			
+		}else
+			[DataTable setHidden:NO];}
 	
-	if (nonHouseholdmembersSegment.selectedSegmentIndex == 0) {
-		nonHouseholdMembers.text=@"0";
-		nonHouseholdMembers.enabled = NO;
-	}else if (nonHouseholdmembersSegment.selectedSegmentIndex == 1) {
-			nonHouseholdMembers.text=@"";
-			nonHouseholdMembers.enabled=YES;
-		}
+	
 }
 //*lx
 
@@ -833,29 +907,91 @@
 {
 	//lx 0401
  if (pickerView == travelModePicker) {
-	 
-	 
-	 if (row == 7 || row == 8 || row ==0) {
-		 [driverPassengerSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
-		 [driverPassengerSegment setEnabled:NO];
+	 if ([trip.purpose length] == 0) {
+		 [householdmembersSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
+		 [householdmembersSegment setEnabled:YES];
 		 
-		 [tollSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
-		 [tollSegment setEnabled:NO];
-	 }else
-	 {
-		 if (row > 2) {
+		 [nonHouseholdmembersSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
+		 [nonHouseholdmembersSegment setEnabled:YES];
+		 
+		 //		 nonHouseholdMembers.text = @"0";
+		 if (row  == 7 || row == 8  ) {
 			 [driverPassengerSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
 			 [driverPassengerSegment setEnabled:NO];
+			 [tollSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
+			 [tollSegment setEnabled:NO];
+		 }else
+		 {
+			 if (row > 2) {
+				 
+				 [driverPassengerSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
+				 [driverPassengerSegment setEnabled:NO];
+				 
+				 [tollSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
+				 [tollSegment setEnabled:YES];
+			 }
+			 
+			 else {
+				 [driverPassengerSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
+				 [driverPassengerSegment setEnabled:YES];
+				 
+				 [tollSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
+				 [tollSegment setEnabled:YES];
+			 }
+		 }
+	 }else{
+		 if (row  == 7 || row == 8 ) {
+			 [householdmembersSegment setSelectedSegmentIndex:[[trip isMembers] intValue]];
+			 [nonHouseholdmembersSegment setSelectedSegmentIndex:[[trip isnonMembers] intValue]];
+			 
+			 [driverPassengerSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
+			 [driverPassengerSegment setEnabled:NO];
+			 
+			 [tollSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
+			 [tollSegment setEnabled:NO];
+		 }else
+		 {
+			 if (row > 2 ) {
+				 [householdmembersSegment setSelectedSegmentIndex:[[trip isMembers] intValue]];
+				 [nonHouseholdmembersSegment setSelectedSegmentIndex:[[trip isnonMembers] intValue]];
+				 
+				 [driverPassengerSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
+				 [driverPassengerSegment setEnabled:NO];
+				 
+				 [tollSegment setSelectedSegmentIndex:[[trip toll] intValue]];
+				 [tollSegment setEnabled:YES];
+
+			 }
+			 
+			 else {
+				 [householdmembersSegment setSelectedSegmentIndex:[[trip isMembers] intValue]];
+				 [nonHouseholdmembersSegment setSelectedSegmentIndex:[[trip isnonMembers] intValue]];
+				 //driverType
+				 if ([[trip driverType] compare:@"Driver"] == NSOrderedSame) {
+					 [driverPassengerSegment setSelectedSegmentIndex:0];
+				 }else
+				 {
+					 if ([[trip driverType] compare:@"Passenger"] == NSOrderedSame) {
+						 [driverPassengerSegment setSelectedSegmentIndex:1];
+					 }else
+					 {
+						 [driverPassengerSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
+						 [driverPassengerSegment setEnabled:NO];
+					 }
+				 }
+				 
+				 
+					
+				 [driverPassengerSegment setEnabled:YES];
+				 
+				 [tollSegment setSelectedSegmentIndex:[[trip toll] intValue]];
+				 [tollSegment setEnabled:YES];
+			 }
+		 }
+	 
 	 }
-		 
-	 else {
-		 [driverPassengerSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
-		 [driverPassengerSegment setEnabled:YES];
-		 
-		 [tollSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
-		 [tollSegment setEnabled:YES];
-	 }
-	 }
+	 
+	 
 	 
 	 
  }//*lx

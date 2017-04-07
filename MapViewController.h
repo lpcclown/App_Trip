@@ -52,6 +52,7 @@
 @property (weak, nonatomic) IBOutlet UIButton *viewTrips;
 @property (weak, nonatomic) IBOutlet UIButton *addDetailInfo;
 @property (weak, nonatomic) IBOutlet UIButton *removeTrip;//lx 0401
+@property (weak, nonatomic) IBOutlet UILabel *tripInfo;
 
 - (id)initWithTrip:(Trip *)trip;
 

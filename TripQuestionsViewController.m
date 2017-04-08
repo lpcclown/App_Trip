@@ -753,6 +753,8 @@
 	}
 	else tableheight=40*[dataArray1 count];
 	DataTable = [[UITableView alloc] initWithFrame:CGRectMake(8, 528, 340,tableheight)];
+	//[LIU0407]Disable the selection animation in tableview.
+	DataTable.allowsSelection = NO;
 	[DataTable setDelegate:self];
 	[DataTable setDataSource:self];
 	[DataTable flashScrollIndicators];

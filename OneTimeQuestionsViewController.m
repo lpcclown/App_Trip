@@ -31,7 +31,7 @@
 @synthesize userinfoid,reuserinfoid,initialinfo,genderinfo,ageinfo,familymembersinfo,driverlicense,deviceNum,namePicker,householdID,rehouseholdID,submitID;
 @synthesize submit,q1,q2,q3,q4,q5,q6,modifylabel,confirmlabel,confirmyes,confirmno,modify;//lxx
 
-@synthesize ageinfoDataSource,namePickerDataSource, memberArray;//lxx
+@synthesize ageinfoDataSource,namePickerDataSource, memberArray,driverLicNumber;//lxx
 
 
 //*lx
@@ -147,7 +147,7 @@
 			[homemakerSegment setSelectedSegmentIndex:0];
 			[selfEmployedSegment setSelectedSegmentIndex:0];
 			[licenseSegment setSelectedSegmentIndex:0];
-			[driverlicense setSelectedSegmentIndex:0];//lx
+			[driverlicense setSelectedSegmentIndex:1];//lx
 			[fullTimeSegment setEnabled:NO];
 			[partTimeSegment setEnabled:NO];
 			[fiveMonthSegment setEnabled:NO];
@@ -171,7 +171,7 @@
 			[homemakerSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
 			[selfEmployedSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
 			[licenseSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
-			[driverlicense setSelectedSegmentIndex:UISegmentedControlNoSegment];//lx
+			//[driverlicense setSelectedSegmentIndex:UISegmentedControlNoSegment];//lx
 			[fullTimeSegment setEnabled:YES];
 			[partTimeSegment setEnabled:YES];
 			[fiveMonthSegment setEnabled:YES];
@@ -185,7 +185,13 @@
 			User *user= [self getNewOrExistingUser];
 //			NSLog(@"[[_user age]intValue]] is %@",[user age]);
 //			NSLog(@"[[_user driverlicense]intValue]] is %@",[user driverlicense]);
-			[driverlicense setSelectedSegmentIndex:[[user driverlicense]intValue]];//lx 0405
+			if([[user driverlicense]intValue]==0){
+				[driverlicense setSelectedSegmentIndex:1];//lx 0405
+			}else if([[user driverlicense]intValue]==1){
+				
+				[driverlicense setSelectedSegmentIndex:0];//lx 0405
+			}else
+				[driverlicense setSelectedSegmentIndex:UISegmentedControlNoSegment];
 		}
 	}
 }
@@ -329,10 +335,10 @@
 				}
 				if (driverLicload != nil && (NSNull *)driverLicload != [NSNull null]){
 					if ([driverLicload compare:@"0"] == NSOrderedSame) {
-						[driverlicense setSelectedSegmentIndex:0];
+						[driverlicense setSelectedSegmentIndex:1];
 					}
 					else
-						[driverlicense setSelectedSegmentIndex:1];
+						[driverlicense setSelectedSegmentIndex:0];
 				}
 				if (deviceNumload != Nil && (NSNull *)deviceNumload != [NSNull null]) {
 					deviceNum= deviceNumload;
@@ -424,8 +430,9 @@
 	{
 		NSString *genderString =([genderinfo selectedSegmentIndex] == 0) ? (@"M") : (@"F");
 		NSString *ageString = [[ageinfo delegate] pickerView:ageinfo titleForRow:[ageinfo selectedRowInComponent:0] forComponent:0];
-		NSString *driverLicString = ([driverlicense selectedSegmentIndex] == 0) ? (@"0") : (@"1");
-		NSNumber *driverLicNumber = ([driverlicense selectedSegmentIndex] == 0) ? (@0) : (@1);
+		NSString *driverLicString = ([driverlicense selectedSegmentIndex] == 0) ? (@"1") : (@"0");
+		NSNumber *driverLicNumber = ([driverlicense selectedSegmentIndex] == 0) ? (@1) : (@0);
+		
 		NSDictionary *userInfo = [NSDictionary dictionaryWithObjectsAndKeys:userinfoid.text,@"userid",deviceNum,@"deviceNum",@"",@"status",initialinfo.text,@"initial",genderString,@"gender",ageString,@"age",driverLicNumber,@"driverLic",@"",@"familyMembers", nil];
 		
 		NSData *responseData = [ServerInteract sendRequest:userInfo toURLAddress:kUpdateUserInfo];
@@ -521,8 +528,8 @@
 	{
 		NSString *genderString =([genderinfo selectedSegmentIndex] == 0) ? (@"M") : (@"F");
 		NSString *ageString = [[ageinfo delegate] pickerView:ageinfo titleForRow:[ageinfo selectedRowInComponent:0] forComponent:0];
-		NSString *driverLicString = ([driverlicense selectedSegmentIndex] == 0) ? (@"0") : (@"1");
-		NSNumber *driverLicNumber = ([driverlicense selectedSegmentIndex] == 0) ? (@0) : (@1);
+		NSString *driverLicString = ([driverlicense selectedSegmentIndex] == 0) ? (@"1") : (@"0");
+		NSNumber *driverLicNumber = ([driverlicense selectedSegmentIndex] == 0) ? (@1) : (@0);
 		NSDictionary *userInfo = [NSDictionary dictionaryWithObjectsAndKeys:userinfoid.text,@"userid",deviceNum,@"deviceNum",@"",@"status",initialinfo.text,@"initial",genderString,@"gender",ageString,@"age",driverLicNumber,@"driverLic",@"",@"familyMembers", nil];
 		
 		NSData *responseData = [ServerInteract sendRequest:userInfo toURLAddress:kUpdateUserInfo];
@@ -620,26 +627,26 @@
 - (void)loadUserSettings {
 	
 	namePicker.hidden = YES;
-	q2.frame = CGRectMake(8, 190, 568, 44);
+	q2.frame = CGRectMake(8, rehouseholdID.frame.origin.y+52, 568, 44);
 	
-	initialinfo.frame = CGRectMake(8, 242, 568, 30 );
+	initialinfo.frame = CGRectMake(8, q2.frame.origin.y+38, 568, 30 );
 	
-	q3.frame = CGRectMake(8, 280, 568, 44 );
+	q3.frame = CGRectMake(8, initialinfo.frame.origin.y+52, 568, 44 );
 	
-	familymembersinfo.frame = CGRectMake(8, 280+38, 568,30);
+	familymembersinfo.frame = CGRectMake(8, q3.frame.origin.y+38, 568,30);
 	
-	q4.frame = CGRectMake(8, 280+38+52, 568,44);
+	q4.frame = CGRectMake(8, familymembersinfo.frame.origin.y+52, 568,44);
 	
-	genderinfo.frame = CGRectMake(8,280+38+52+38, 568, 28);
+	genderinfo.frame = CGRectMake(8,q4.frame.origin.y+38, 568, 28);
 	
-	q5.frame = CGRectMake(8, 280+38+52+38+52, 568, 44);
+	q5.frame = CGRectMake(8, genderinfo.frame.origin.y+52, 568, 44);
 	
-	ageinfo.frame = CGRectMake(8,  280+38+52+38+52+38, 568, 162);
+	ageinfo.frame = CGRectMake(8,  q5.frame.origin.y+38, 568, 162);
 	
-	q6.frame = CGRectMake(8,  280+38+52+38+52+38+52+162-44, 568, 44);
+	q6.frame = CGRectMake(8,  ageinfo.frame.origin.y+52+162-44, 568, 44);
 	
-	driverlicense.frame = CGRectMake(8, 280+38+52+38+52+38+52+162-44+38, 568, 28);
-	modify.frame = CGRectMake(8, 280+38+52+38+52+38+52+162-44+38+52, 568, 44);
+	driverlicense.frame = CGRectMake(8, q6.frame.origin.y+38, 568, 28);
+	modify.frame = CGRectMake(8, driverlicense.frame.origin.y+52, 568, 44);
 	
 	
 	namePicker.hidden= YES;
@@ -708,12 +715,7 @@
 	familymembersinfo.text=user.familyMembers;
 	deviceNum = user.deviceNum;
 	
-	PickerViewDataSource *age= (PickerViewDataSource *)[ageinfo dataSource];
-	for (int i= 0; i < [[age dataArray] count]; i++) {
-		if ([[user age] compare:[[age dataArray] objectAtIndex:i]] == NSOrderedSame) {
-			[ageinfo selectRow:i inComponent:0 animated:NO];
-		}
-	}
+	
 	
 	//[initialinfo setText:[[user initial] stringValue]];
 	if ([[user gender] compare:@"M"] == NSOrderedSame) {
@@ -725,14 +727,7 @@
 	
 	//	NSLog(@"test.............gender%@", [user gender] );
 	//	NSLog(@"test.............deviceNum%@", [user deviceNum] );
-	
-	if ([[user gender] compare:@"M"] == NSOrderedSame) {
-		[gender setSelectedSegmentIndex:0];	}
-	else
-		[gender setSelectedSegmentIndex:1];
-	
-	
-	
+
 	PickerViewDataSource *ageDataSource= (PickerViewDataSource *)[ageinfo dataSource];
 	for (int i= 0; i < [[ageDataSource dataArray] count]; i++) {
 		if ([[user age] compare:[[ageDataSource dataArray] objectAtIndex:i]] == NSOrderedSame) {
@@ -742,17 +737,26 @@
 	
 	
 	if ([[user age] compare:[[ageDataSource dataArray] objectAtIndex:0] ]== NSOrderedSame || [[user age] compare:[[ageDataSource dataArray] objectAtIndex:1] ]== NSOrderedSame) {
-		[driverlicense setSelectedSegmentIndex:0];
+		[driverlicense setSelectedSegmentIndex:1];//lx
 		[driverlicense setEnabled:NO];
 	}else {
-		[driverlicense setSelectedSegmentIndex:[[user driverlicense]intValue]];//lx 0405
 		[driverlicense setEnabled:YES];
+		if([[user driverlicense]intValue]==0){
+			[driverlicense setSelectedSegmentIndex:1];//lx 0405
+			 driverLicNumber = @1;
+		}else if([[user driverlicense]intValue]==1){
+			
+			[driverlicense setSelectedSegmentIndex:0];
+			
+			driverLicNumber = @0;//lx 0405
+		}else
+			[driverlicense setSelectedSegmentIndex:UISegmentedControlNoSegment];
 	}
-
 	
+
+
 	NSString *genderString =([genderinfo selectedSegmentIndex] == 0) ? (@"M") : (@"F");
 	NSString *ageString = [[ageinfo delegate] pickerView:ageinfo titleForRow:[ageinfo selectedRowInComponent:0] forComponent:0];
-	NSNumber *driverLicNumber = ([driverlicense selectedSegmentIndex] == 0) ? (@0) : (@1);
 	if (user.succTag == 0) {//lx
 		NSDictionary *userInfo = [NSDictionary dictionaryWithObjectsAndKeys:userinfoid.text,@"userid",deviceNum,@"deviceNum",@"",@"status",initialinfo.text,@"initial",genderString,@"gender",ageString,@"age",driverLicNumber,@"driverLic",@"",@"familyMembers", nil];
 		

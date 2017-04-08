@@ -74,6 +74,7 @@ LoadingView *loading;
 @property NSManagedObjectContext *managedContext;
 @property User *user;
 @property NSArray* memberArray;
+@property NSNumber *driverLicNumber;
 
 - (IBAction)ageSegmentChanged:(id)sender;
 

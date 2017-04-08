@@ -88,7 +88,6 @@
 @property (weak, nonatomic) IBOutlet UISegmentedControl *driverPassengerSegment;
 @property (weak, nonatomic) IBOutlet UIPickerView *activityPicker;
 
-
 @property (nonatomic, strong) PickerViewDataSource *activityPickerViewDataSource;
 //@property (nonatomic, strong) PickerViewDataSource *travelModePicker;
 @property NSManagedObjectContext *managedContext;
@@ -99,7 +98,6 @@
 @property (weak, nonatomic) IBOutlet UINavigationBar *cancel;
 
 @property (strong, nonatomic) NSString *familyMember;
-
 
 
 

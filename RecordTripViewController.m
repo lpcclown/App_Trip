@@ -243,6 +243,7 @@
 		speedCounter.text = @"0.0 mph";
     
     // check the battery level and stop recording if low
+	//[LIU0407]Disable battery check
     //[self batteryLevelLowStartPressed:FALSE];
 }
 

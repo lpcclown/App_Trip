@@ -48,8 +48,9 @@
 	
 	NSMutableArray *dataArray1;
 
-	
-	//UITextView				*description;
+	//[LIU0408]Change picker to tableview
+	UITableView *transportationTable;
+	UITableView *purposeTable;
 }
 
 
@@ -99,8 +100,8 @@
 
 @property (strong, nonatomic) NSString *familyMember;
 
-
-
+@property (strong, nonatomic) NSIndexPath  *lastSelectedIndexPath;
+@property (strong, nonatomic) NSIndexPath  *lastSelectedPurposeIndexPath;
 //*lx
 //[LIU]
 @property (nonatomic, strong) Trip *trip;
@@ -108,6 +109,7 @@
 
 
 - (id)initWithPurpose:(NSInteger)index;
+- (void)initSetup: (NSInteger) row;
 
 - (IBAction)cancel:(id)sender;
 - (IBAction)save:(id)sender;

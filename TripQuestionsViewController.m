@@ -46,7 +46,7 @@
 
 @synthesize customPickerView, customPickerDataSource, delegate, tripDescription;
 
-@synthesize accidentSegment, fareCost, fareQuestion, householdMembers,nonHouseholdMembers, parkingCost, parkingSegment, scrollView, tollCost, tollSegment, travelModePicker, tmDataSource, saveButton, otherTripPurposeText;
+@synthesize accidentSegment, fareCost, fareQuestion, householdMembers,nonHouseholdMembers, parkingCost, parkingSegment, scrollView, tollCost, tollSegment, travelModePicker, tmDataSource, saveButton, otherTripPurposeText, lastSelectedIndexPath, lastSelectedPurposeIndexPath;
 
 //lx
 @synthesize startTimeChange,endTimechange,householdmembersSegment,houseMembersdynamic,nonHouseholdmembersSegment,driverPassengerSegment,activityPicker,trip;
@@ -132,19 +132,30 @@
 											  cancelButtonTitle:@"OK"
 											  otherButtonTitles:nil];
 		[alert show];
-	}else{
+	}else
+	{
 		
 		//lx
-		if ([[travelModePicker delegate] pickerView:travelModePicker titleForRow:[travelModePicker selectedRowInComponent:0] forComponent:0].length == 0){
+		//if ([[travelModePicker delegate] pickerView:travelModePicker titleForRow:[travelModePicker selectedRowInComponent:0] forComponent:0].length == 0){
+		if(lastSelectedIndexPath == nil){
 			UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"Please select your type of transportation."
 															message:nil
 														   delegate:self
 												  cancelButtonTitle:@"OK"
 												  otherButtonTitles:nil];
 			[alert show];
+		}else if ([nonHouseholdMembers.text  isEqual: @""] && [nonHouseholdmembersSegment selectedSegmentIndex] == 0){//lx 0408
+   
+			UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"Please enter how many non-household members traveled with you."
+               message:nil
+														   delegate:self
+												  cancelButtonTitle:@"OK"
+												  otherButtonTitles:nil];
+			[alert show];
 		}
-		else if ([[activityPicker delegate] pickerView:activityPicker titleForRow:[activityPicker selectedRowInComponent:0] forComponent:0].length == 0){
-			
+		
+		//else if ([[activityPicker delegate] pickerView:activityPicker titleForRow:[activityPicker selectedRowInComponent:0] forComponent:0].length == 0){
+		else if(lastSelectedPurposeIndexPath == nil){
 			UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"Please select your PRIMARY activity."
 															message:nil
 														   delegate:self
@@ -191,10 +202,15 @@
 			directedTrip.startTime=[dateFormat dateFromString:startTimeChange.text];
 			directedTrip.stopTime=[dateFormat dateFromString:endTimechange.text];
 			//travelBy
-			directedTrip.travelBy = [[travelModePicker delegate] pickerView:travelModePicker titleForRow:[travelModePicker selectedRowInComponent:0] forComponent:0];
+			//directedTrip.travelBy = [[travelModePicker delegate] pickerView:travelModePicker titleForRow:[travelModePicker selectedRowInComponent:0] forComponent:0];
+			//directedTrip.travelBy = transportationTable.indexPathForSelectedRow;
+			
+			UITableViewCell *selectedCell=[transportationTable cellForRowAtIndexPath:lastSelectedIndexPath];
+			NSLog(@"%ld  indexPathForSelectedRow  ", lastSelectedIndexPath.row);
+			directedTrip.travelBy= selectedCell.textLabel.text;
+			
 			//isMembers
 			if([householdmembersSegment selectedSegmentIndex] !=-1){
-				
 				directedTrip.isMembers =(([householdmembersSegment selectedSegmentIndex] == 0) ? [NSNumber numberWithInt:1] : [NSNumber numberWithInt:0]);
 			}else directedTrip.isMembers = @-1;
 			//familyMembers && members (how many seleted)
@@ -238,10 +254,14 @@
 			//		if ([[purposeAnswer dataArray] objectAtIndex:11]) {
 			//			[tripAnswers setObject:otherText forKey:@"purpose"];
 			//		}
-			directedTrip.purpose = [[activityPicker delegate] pickerView:activityPicker titleForRow:[activityPicker selectedRowInComponent:0] forComponent:0];
 			
+			//purpose
+			//directedTrip.purpose = [[activityPicker delegate] pickerView:activityPicker titleForRow:[activityPicker selectedRowInComponent:0] forComponent:0];
 			
-			NSLog(@"upload trip index as follows:\nstartTime is: %@\nstopTime is: %@\ntravelBy is: %@\nisMembers is: %@\nfamilyMembers is: %@\nmembers is: %@\nisnonMembers is: %@\nnonMembers is: %@\ndriverType is: %@\ntoll is: %@", startTimeChange.text,endTimechange.text, directedTrip.travelBy, directedTrip.isMembers, directedTrip.familyMembers, directedTrip.members, directedTrip.isnonMembers, directedTrip.nonMembers, directedTrip.driverType, directedTrip.toll);
+			UITableViewCell *selectedPurposeCell=[purposeTable cellForRowAtIndexPath:lastSelectedPurposeIndexPath];
+			directedTrip.purpose= selectedPurposeCell.textLabel.text;
+			
+			NSLog(@"upload trip index as follows:\nstartTime is: %@\nstopTime is: %@\ntravelBy is: %@\nisMembers is: %@\nfamilyMembers is: %@\nmembers is: %@\nisnonMembers is: %@\nnonMembers is: %@\ndriverType is: %@\ntoll is: %@\npurpose is: %@", startTimeChange.text,endTimechange.text, directedTrip.travelBy, directedTrip.isMembers, directedTrip.familyMembers, directedTrip.members, directedTrip.isnonMembers, directedTrip.nonMembers, directedTrip.driverType, directedTrip.toll, directedTrip.purpose);
 			
 			//[LIU] save updated trip into server
 			NSFetchRequest *userRequest = [[NSFetchRequest alloc] init];
@@ -452,7 +472,6 @@
 		if ([[trip travelBy] compare:[[travelBy travelModes] objectAtIndex:i]] == NSOrderedSame) {
 			[travelModePicker selectRow:i inComponent:0 animated:NO];
 		}
-		
 	}
 	if([[trip isMembers]intValue]==0){
 		[householdmembersSegment setSelectedSegmentIndex:1];//lx 0405
@@ -477,25 +496,43 @@
 	else
 		numofhousholdMemberselected=[trip.members intValue];
 	
-	
-	if([trip.isnonMembers intValue]==0){
+	if([trip.nonMembers intValue] == 0 ){
 		[nonHouseholdmembersSegment setSelectedSegmentIndex:1];//lx 0405
-	}else if([trip.isnonMembers intValue]==1){
-		
-		[nonHouseholdmembersSegment setSelectedSegmentIndex:0];
-		
+	}else if([trip.nonMembers intValue] > 0){
+  
+	[nonHouseholdmembersSegment setSelectedSegmentIndex:0];
+  
 	}else {
 		[nonHouseholdmembersSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
 	}
-	
-//	[nonHouseholdmembersSegment setSelectedSegmentIndex:[[trip isnonMembers] intValue]];
-	
-	if([trip.isnonMembers intValue]<=0){
-		nonHouseholdMembers.text=@"0";
-		nonHouseholdMembers.enabled= NO;
-	}
-	else
-		nonHouseholdMembers.text=[trip.nonMembers stringValue];
+ 
+ // [nonHouseholdmembersSegment setSelectedSegmentIndex:[[trip isnonMembers] intValue]];
+ 
+ if([trip.nonMembers intValue] <= 0 ){
+  nonHouseholdMembers.text=@"0";
+  nonHouseholdMembers.enabled= NO;
+ }
+ else
+  nonHouseholdMembers.text=[trip.nonMembers stringValue];
+ NSLog(@"nonHouseholdMembers.text is %@",nonHouseholdMembers.text);
+	//	if([trip.isnonMembers intValue]==0){
+//		[nonHouseholdmembersSegment setSelectedSegmentIndex:1];//lx 0405
+//	}else if([trip.isnonMembers intValue]==1){
+//		
+//		[nonHouseholdmembersSegment setSelectedSegmentIndex:0];
+//		
+//	}else {
+//		[nonHouseholdmembersSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
+//	}
+//	
+////	[nonHouseholdmembersSegment setSelectedSegmentIndex:[[trip isnonMembers] intValue]];
+//	
+//	if([trip.isnonMembers intValue]<=0){
+//		nonHouseholdMembers.text=@"0";
+//		nonHouseholdMembers.enabled= NO;
+//	}
+//	else
+//		nonHouseholdMembers.text=[trip.nonMembers stringValue];
 	NSLog(@"nonHouseholdMembers.text is %@",nonHouseholdMembers.text);
 	
 	
@@ -538,9 +575,7 @@
 - (BOOL)shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)interfaceOrientation
 
 {
-	
 	// Return YES for supported orientations
-	
 	return (interfaceOrientation == UIInterfaceOrientationPortrait);
 	
 }
@@ -550,60 +585,166 @@
 	return 1;
 }
 
+- (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
+{
+	switch (tableView.tag) {
+  case 801:
+		{
+			[tableView cellForRowAtIndexPath:indexPath].accessoryType = UITableViewCellAccessoryCheckmark;
+			
+			[tableView deselectRowAtIndexPath:indexPath animated:YES];
+			//[tableView reloadData];
+			
+			[tableView cellForRowAtIndexPath:self.lastSelectedIndexPath].accessoryType = UITableViewCellAccessoryNone;
+			[tableView cellForRowAtIndexPath:indexPath].accessoryType = UITableViewCellAccessoryCheckmark;
+			self.lastSelectedIndexPath = indexPath;
+			[self initSetup: lastSelectedIndexPath.row];
+			break;
+		}
+  case 802:
+		{
+			[tableView cellForRowAtIndexPath:indexPath].accessoryType = UITableViewCellAccessoryCheckmark;
+			
+			[tableView deselectRowAtIndexPath:indexPath animated:YES];
+			//[tableView reloadData];
+			
+			[tableView cellForRowAtIndexPath:self.lastSelectedPurposeIndexPath].accessoryType = UITableViewCellAccessoryNone;
+			[tableView cellForRowAtIndexPath:indexPath].accessoryType = UITableViewCellAccessoryCheckmark;
+			self.lastSelectedPurposeIndexPath = indexPath;
+			break;
+		}
+  default:
+			break;
+	}
+	
+}
+
+//- (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath   *)indexPath
+//{
+//	[tableView cellForRowAtIndexPath:indexPath].accessoryType = UITableViewCellAccessoryCheckmark;
+//}
+
+//-(void)tableView:(UITableView *)tableView didDeselectRowAtIndexPath:(NSIndexPath *)indexPath
+//{
+//	[tableView cellForRowAtIndexPath:indexPath].accessoryType = UITableViewCellAccessoryNone;
+//}
+
+
+
+
 //draw table cell
 
 -(UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
 	
 	static NSString *CellIdentifier = @"Cell";
 	
-	UITableViewCell *cell = (UITableViewCell*)[tableView
-											   
-											   dequeueReusableCellWithIdentifier:CellIdentifier];
+	UITableViewCell *cell = (UITableViewCell*)[tableView dequeueReusableCellWithIdentifier:CellIdentifier];
 	if(cell == nil)
 		
 	{
 		cell = [[UITableViewCell alloc] initWithFrame:CGRectZero reuseIdentifier:CellIdentifier];
-		[[cell textLabel] setText:[dataArray1 objectAtIndex:indexPath.row]];
 		cell.backgroundColor=[UIColor blackColor];//lx
 		cell.textLabel.textColor=[UIColor whiteColor];//lx
 		cell.accessibilityNavigationStyle=[UIColor whiteColor];//lx
 		
-		UISwitch *switchView = [[UISwitch alloc] initWithFrame:CGRectZero];
-		cell.accessoryView = switchView;
-		
-		if ([trip.isMembers  isEqual: @1]){
-			DataTable.hidden = NO;
-			NSString *familyMembers = [trip familyMembers];
-			NSArray *familyMembersAdded = [familyMembers componentsSeparatedByString: @","];
-			NSLog(@"familyMembersAdded are %@",familyMembersAdded);
-			NSArray *arrayFamilyMembersAdded = [[NSMutableArray alloc] initWithArray:familyMembersAdded];
-			for (int i = 0 ; i < arrayFamilyMembersAdded.count; i++) {
-				//for (int j = 0 ;j < dataArray1.count; j++){
-				if([[arrayFamilyMembersAdded objectAtIndex: i] caseInsensitiveCompare: [dataArray1 objectAtIndex:indexPath.row]] == NSOrderedSame){
-					NSLog(@"%@", [arrayFamilyMembersAdded objectAtIndex: i]);
-					NSLog(@"%@",[dataArray1 objectAtIndex:indexPath.row]);
-					//[LIU0314] Add the async to UISwith, otherwise cannot turn it on.
-					dispatch_async(dispatch_get_main_queue(), ^{
-						[switchView setOn:YES animated:YES];
-					});
-				}else{
-					[switchView setOn:NO animated:NO];
+		switch (tableView.tag) {
+			case 801:
+			{
+				NSArray *travelModeList = [[NSArray alloc] initWithObjects:@"Car, truck or van",
+										   @"Motorcycle/Moped",
+										   @"Public Bus",
+										   @"School bus",
+										   @"Taxi Cab",
+										   @"Uber or other car service",
+										   @"Bicycle",
+										   @"Walked",
+										   @"Other Method",nil];
+				[[cell textLabel] setText:[travelModeList objectAtIndex:indexPath.row]];
+
+				if([self.lastSelectedIndexPath isEqual:indexPath])
+				{
+					cell.accessoryType = UITableViewCellAccessoryCheckmark;
 				}
-				//}
+				else
+				{
+					cell.accessoryType = UITableViewCellAccessoryNone;
+				}
+				
+				return cell;
+				break;}
+			case 802:
+			{
+				NSArray *purposeList = [[NSArray alloc] initWithObjects:
+															 kTripPurposeHomeString,
+															 kTripPurposeWorkString,
+															 kTripPurposeWorkRelatedString,
+															 kTripPurposeCollegeString,
+															 kTripPurposeSchoolString,
+															 kTripPurposePersonalBizString,
+															 kTripPurposeMealString,
+															 kTripPurposeSocialString,
+															 kTripPurposeShoppingString,
+															 kTripPurposeRecreationString,
+															 kTripPurposeEntertainmentString,
+															 kTripPurposePickUpString,
+															 kTripPurposeOtherString,
+															 nil];
+				[[cell textLabel] setText:[purposeList objectAtIndex:indexPath.row]];
+				cell.textLabel.numberOfLines = 2;
+				cell.textLabel.lineBreakMode = UILineBreakModeWordWrap;
+				if([self.lastSelectedPurposeIndexPath isEqual:indexPath])
+				{
+					cell.accessoryType = UITableViewCellAccessoryCheckmark;
+				}
+				else
+				{
+					cell.accessoryType = UITableViewCellAccessoryNone;
+				}
+				
+				return cell;
+				break;}
+			case 803:
+			{
+				[[cell textLabel] setText:[dataArray1 objectAtIndex:indexPath.row]];
+				
+				
+				UISwitch *switchView = [[UISwitch alloc] initWithFrame:CGRectZero];
+				cell.accessoryView = switchView;
+				
+				if ([trip.isMembers  isEqual: @1]){
+					DataTable.hidden = NO;
+					NSString *familyMembers = [trip familyMembers];
+					NSArray *familyMembersAdded = [familyMembers componentsSeparatedByString: @","];
+					NSLog(@"familyMembersAdded are %@",familyMembersAdded);
+					NSArray *arrayFamilyMembersAdded = [[NSMutableArray alloc] initWithArray:familyMembersAdded];
+					for (int i = 0 ; i < arrayFamilyMembersAdded.count; i++) {
+						//for (int j = 0 ;j < dataArray1.count; j++){
+						if([[arrayFamilyMembersAdded objectAtIndex: i] caseInsensitiveCompare: [dataArray1 objectAtIndex:indexPath.row]] == NSOrderedSame){
+							NSLog(@"%@", [arrayFamilyMembersAdded objectAtIndex: i]);
+							NSLog(@"%@",[dataArray1 objectAtIndex:indexPath.row]);
+							//[LIU0314] Add the async to UISwith, otherwise cannot turn it on.
+							dispatch_async(dispatch_get_main_queue(), ^{
+								[switchView setOn:YES animated:YES];
+							});
+						}else{
+							[switchView setOn:NO animated:NO];
+						}
+						//}
+					}
+				}
+				[switchView addTarget:self action:@selector(switchChanged:) forControlEvents:UIControlEventValueChanged];
+				NSLog(@"Cell is ....%@",cell);
+				// Add a UISwitch to the accessory view.
+				
+				switchView.tag = indexPath.row;
+				switchView.on = [[NSUserDefaults standardUserDefaults] boolForKey:@"menuItemSwitch"];
+				[switchView addTarget:self action:@selector(switchChanged:) forControlEvents:UIControlEventValueChanged];
+				break;
 			}
-			
+			default:
+				break;
 		}
-		
-		
-		[switchView addTarget:self action:@selector(switchChanged:) forControlEvents:UIControlEventValueChanged];
-		NSLog(@"Cell is ....%@",cell);
-		// Add a UISwitch to the accessory view.
-		
-		switchView.tag = indexPath.row;
-		switchView.on = [[NSUserDefaults standardUserDefaults] boolForKey:@"menuItemSwitch"];
-		[switchView addTarget:self action:@selector(switchChanged:) forControlEvents:UIControlEventValueChanged];
 	}
-	
 	return cell;
 	
 	
@@ -612,7 +753,11 @@
 - (void)scrollViewDidScroll:(UIScrollView *)scrollView{
 	CGPoint point=scrollView.contentOffset;
 	cancel.frame= CGRectMake(0, point.y, cancel.bounds.size.width, 44 );
-	
+	//[self.navigationController setNavigationBarHidden:NO animated:YES];
+	//cancel.translucent = NO;
+	[self.view sendSubviewToBack:transportationTable];
+	[self.view sendSubviewToBack:purposeTable];
+	[self.view sendSubviewToBack:DataTable];
 }
 //lx
 
@@ -643,11 +788,63 @@
 //update raw hight
 - (CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath{
 	
-	return 40;
+	switch (tableView.tag) {
+		case 801:
+			return 40;
+			break;
+		case 802:
+			return 50;
+			break;
+		case 803:
+			return 40;
+			break;
+		default:
+			return 0;
+			break;
+	}
 	
 }
+- (void)tableView:(UITableView *)tableView willDisplayCell:(UITableViewCell *)cell forRowAtIndexPath:(NSIndexPath *)indexPath
+{
+	
+	switch (tableView.tag) {
+		case 801:
+			if ([[trip travelBy] compare:cell.textLabel.text] == NSOrderedSame) {
+				cell.accessoryType = UITableViewCellAccessoryCheckmark;
+				lastSelectedIndexPath = indexPath;
+			}
+			break;
+		case 802:
+			if ([[trip purpose] compare:cell.textLabel.text] == NSOrderedSame) {
+				cell.accessoryType = UITableViewCellAccessoryCheckmark;
+				lastSelectedPurposeIndexPath = indexPath;
+			}
+			
+			break;
+		case 803:
+			
+			break;
+		default:
+			
+			break;
+	}
+}
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
-	return [dataArray1 count];
+	
+	switch (tableView.tag) {
+		case 801:
+			return 9;
+			break;
+		case 802:
+			return 13;
+			break;
+		case 803:
+			return [dataArray1 count];
+			break;
+		default:
+			return 0;
+			break;
+	}
 }
 
 
@@ -718,18 +915,17 @@
 	}
 	
 	
-	NSLog(@"%@", housholdMemberselected);
+	//NSLog(@"%@", housholdMemberselected);
 	
 }
 - (void)viewDidLoad
 {
 	[super viewDidLoad];
-	
-	
-    
+	self.nonHouseholdMembers.delegate = self;
+	[self.nonHouseholdMembers addTarget:self action:@selector(textFieldChanged:) forControlEvents:UIControlEventEditingChanged];//lx 0408
 	self.title = NSLocalizedString(@"Trip Details", @"");
 	//lx
-	
+	[travelModePicker setHidden:YES];
 	FloridaTripTrackerAppDelegate *delegatea= [[UIApplication sharedApplication] delegate];
 	NSManagedObjectContext *managedContext = [delegatea managedObjectContext];
 	//[LIU] obtain familymember info from db
@@ -752,7 +948,8 @@
 		tableheight=120;
 	}
 	else tableheight=40*[dataArray1 count];
-	DataTable = [[UITableView alloc] initWithFrame:CGRectMake(8, 528, 340,tableheight)];
+	DataTable = [[UITableView alloc] initWithFrame:CGRectMake(8, 690, 340,tableheight)];
+	DataTable.tag = 803;
 	//[LIU0407]Disable the selection animation in tableview.
 	DataTable.allowsSelection = NO;
 	[DataTable setDelegate:self];
@@ -765,6 +962,22 @@
 	}
 	[DataTable setHidden:YES];
 	NSDateFormatter *dateFormat = [[NSDateFormatter alloc] init];
+	
+	//[LIU0408]Change picker view to table view
+	transportationTable = [[UITableView alloc] initWithFrame:CGRectMake(8, 200, 340, 360)];
+	[self.view addSubview:transportationTable];
+	[transportationTable setDelegate:self];
+	[transportationTable setDataSource:self];
+	transportationTable.tag = 801;
+	[transportationTable flashScrollIndicators];
+	
+	purposeTable = [[UITableView alloc] initWithFrame:CGRectMake(8, 1200, 340, 650)];
+	[self.view addSubview:purposeTable];
+	[purposeTable setDelegate:self];
+	[purposeTable setDataSource:self];
+	purposeTable.tag = 802;
+	[purposeTable flashScrollIndicators];
+	
 	//[LIU]
 	if ([startTimeChange.text rangeOfString:@"M"].location == NSNotFound) {
 		//24h
@@ -838,7 +1051,7 @@
 	
 	[activityPicker setTintColor:[UIColor whiteColor]];
 	//*lx
-	
+	[activityPicker setHidden:YES];
 	
 	//*lx
 	
@@ -928,13 +1141,187 @@
 }
 //*lx
 
+- (void)initSetup: (NSInteger) row{
+	
+	 if ([trip.purpose length] == 0) {
+		 [householdmembersSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
+		 [householdmembersSegment setEnabled:YES];
+		 
+		 [nonHouseholdmembersSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
+		 [nonHouseholdmembersSegment setEnabled:YES];
+		 
+		 //		 nonHouseholdMembers.text = @"0";
+		 if (row  == 6 || row == 7  ) {
+			 [driverPassengerSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
+			 [driverPassengerSegment setEnabled:NO];
+			 [tollSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
+			 [tollSegment setEnabled:NO];
+		 }else
+		 {
+			 if (row > 1) {
+				 
+				 [driverPassengerSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
+				 [driverPassengerSegment setEnabled:NO];
+				 
+				 [tollSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
+				 [tollSegment setEnabled:YES];
+			 }
+			 
+			 else {
+				 [driverPassengerSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
+				 [driverPassengerSegment setEnabled:YES];
+				 
+				 [tollSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
+				 [tollSegment setEnabled:YES];
+			 }
+		 }
+	 }else{
+		 if (row  == 6 || row == 7 ) {
+			 if([[trip isMembers]intValue]==0){
+				 [householdmembersSegment setSelectedSegmentIndex:1];//lx 0405
+				 
+			 }else if([[trip isMembers]intValue]==1){
+				 
+				 [householdmembersSegment setSelectedSegmentIndex:0];
+				 
+			 }else{
+				 [householdmembersSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
+			 }
+			 
+			 //			 [householdmembersSegment setSelectedSegmentIndex:[[trip isMembers] intValue]];
+			 
+			 if([[trip isnonMembers]intValue]==0){
+				 [nonHouseholdmembersSegment setSelectedSegmentIndex:1];//lx 0405
+				 
+			 }else if([[trip isnonMembers]intValue]==1){
+				 
+				 [nonHouseholdmembersSegment setSelectedSegmentIndex:0];
+				 
+			 }else{
+				 [nonHouseholdmembersSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
+			 }
+			 
+			 //			 [nonHouseholdmembersSegment setSelectedSegmentIndex:[[trip isnonMembers] intValue]];
+			 
+			 [driverPassengerSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
+			 [driverPassengerSegment setEnabled:NO];
+			 
+			 [tollSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
+			 [tollSegment setEnabled:NO];
+		 }else
+		 {
+			 if (row > 1 ) {
+				 if([[trip isMembers]intValue]==0){
+					 [householdmembersSegment setSelectedSegmentIndex:1];//lx 0405
+					 
+				 }else if([[trip isMembers]intValue]==1){
+					 
+					 [householdmembersSegment setSelectedSegmentIndex:0];
+					 
+				 }else{
+					 [householdmembersSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
+				 }
+				 //				 [householdmembersSegment setSelectedSegmentIndex:[[trip isMembers] intValue]];
+				 
+				 
+				 if([[trip isnonMembers]intValue]==0){
+					 [nonHouseholdmembersSegment setSelectedSegmentIndex:1];//lx 0405
+					 
+				 }else if([[trip isnonMembers]intValue]==1){
+					 
+					 [nonHouseholdmembersSegment setSelectedSegmentIndex:0];
+					 
+				 }else{
+					 [nonHouseholdmembersSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
+				 }
+				 
+				 //				 [nonHouseholdmembersSegment setSelectedSegmentIndex:[[trip isnonMembers] intValue]];
+				 
+				 [driverPassengerSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
+				 [driverPassengerSegment setEnabled:NO];
+				 
+				 if([[trip toll]intValue]==0){
+					 [tollSegment setSelectedSegmentIndex:1];//lx 0405
+					 
+				 }else if([[trip toll]intValue]==1){
+					 
+					 [tollSegment setSelectedSegmentIndex:0];
+					 
+				 }else{
+					 [tollSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
+				 }
+				 
+				 //				 [tollSegment setSelectedSegmentIndex:[[trip toll] intValue]];
+				 [tollSegment setEnabled:YES];
+				 
+			 }
+			 
+			 else {
+				 if([[trip isMembers]intValue]==0){
+					 [householdmembersSegment setSelectedSegmentIndex:1];//lx 0405
+					 
+				 }else if([[trip isMembers]intValue]==1){
+					 
+					 [householdmembersSegment setSelectedSegmentIndex:0];
+					 
+				 }else{
+					 [householdmembersSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
+				 }
+				 //				 [householdmembersSegment setSelectedSegmentIndex:[[trip isMembers] intValue]];
+				 
+				 if([[trip isnonMembers]intValue]==0){
+					 [nonHouseholdmembersSegment setSelectedSegmentIndex:1];//lx 0405
+					 
+				 }else if([[trip isnonMembers]intValue]==1){
+					 
+					 [nonHouseholdmembersSegment setSelectedSegmentIndex:0];
+					 
+				 }else{
+					 [nonHouseholdmembersSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
+				 }
+				 
+				 //				 [nonHouseholdmembersSegment setSelectedSegmentIndex:[[trip isnonMembers] intValue]];
+				 //driverType
+				 if ([[trip driverType] compare:@"Driver"] == NSOrderedSame) {
+					 [driverPassengerSegment setSelectedSegmentIndex:0];
+				 }else
+				 {
+					 if ([[trip driverType] compare:@"Passenger"] == NSOrderedSame) {
+						 [driverPassengerSegment setSelectedSegmentIndex:1];
+					 }else
+					 {
+						 [driverPassengerSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
+					 }
+				 }
+				 [driverPassengerSegment setEnabled:YES];
+				 
+				 if([[trip toll]intValue]==0){
+					 [tollSegment setSelectedSegmentIndex:1];//lx 0405
+					 
+				 }else if([[trip toll]intValue]==1){
+					 
+					 [tollSegment setSelectedSegmentIndex:0];
+					 
+				 }else{
+					 [tollSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
+				 }
+				 [tollSegment setEnabled:YES];
+			 }
+		 }
+		 
+	 }
+}
+
 #pragma mark UIPickerViewDelegate
 
 
 - (void)pickerView:(UIPickerView *)pickerView didSelectRow:(NSInteger)row inComponent:(NSInteger)component
 {
 	//lx 0401
- if (pickerView == travelModePicker) {
+	
+	//NSLog(@"%ld",	(long)lastSelectedIndexPath.row );
+	
+	if (pickerView == travelModePicker) {
 	 if ([trip.purpose length] == 0) {
 		 [householdmembersSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
 		 [householdmembersSegment setEnabled:YES];
@@ -1201,6 +1588,33 @@
 	//[[self scrollView] setContentOffset:CGPointMake(0, textField.frame.origin.y) animated:YES];
 	
 	return YES;
+}
+
+//lx 0408
+- (BOOL)textField:(UITextField *)textField shouldChangeCharactersInRange:(NSRange)range replacementString:(NSString *)string {
+ 
+ return YES;
+}
+//lx 0408
+- (void)textFieldChanged:(UITextField *)textField {
+ 
+ NSString *toBeString = textField.text;
+ 
+ NSString *lang = [[textField textInputMode] primaryLanguage]; // 获取当前键盘输入模式
+ NSLog(@"%@",lang);
+ if(![toBeString isEqual: @"0"]) {
+	 textField.text = toBeString;
+ }else
+ {
+	 UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"Please enter the number greater than 0"
+													 message:nil
+													delegate:self
+										   cancelButtonTitle:@"OK"
+										   otherButtonTitles:nil];
+	 [alert show];
+	 textField.text = @"";
+ }
+ 
 }
 @end
 

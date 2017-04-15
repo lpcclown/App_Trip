@@ -29,7 +29,7 @@
 
 //lx
 @synthesize userinfoid,reuserinfoid,initialinfo,genderinfo,ageinfo,familymembersinfo,driverlicense,deviceNum,namePicker,householdID,rehouseholdID,submitID;
-@synthesize submit,q1,q2,q3,q4,q5,q6,modifylabel,confirmlabel,confirmyes,confirmno,modify;//lxx
+@synthesize submit,UserIDverify,q1,q2,q3,q4,q5,q6,modifylabel,confirmlabel,confirmyes,confirmno,modify;//lxx//lx 0414
 
 @synthesize ageinfoDataSource,namePickerDataSource, memberArray,driverLicNumber;//lxx
 
@@ -64,7 +64,7 @@
 
 - (void)viewDidLoad {
 	[super viewDidLoad];
-	self.scrollView.contentSize = CGSizeMake(320, 500);
+	self.scrollView.contentSize = CGSizeMake(320, 560);
 	// Do any additional setup after loading the view from its nib.
 	UIBarButtonItem * item = [[UIBarButtonItem alloc] initWithCustomView:[[UIImageView alloc] initWithImage:[UIImage imageNamed:@"FDOT"]]];
 	self.navigationItem.rightBarButtonItem = item;
@@ -116,7 +116,7 @@
 	managedContext= [delegate managedObjectContext];
 	
 	if ([delegate hasUserInfoBeenSaved]) {
-		self.scrollView.contentSize = CGSizeMake(320, 920);
+		self.scrollView.contentSize = CGSizeMake(320, 928);
 		[self loadUserSettings];
 		[UIApplication sharedApplication].statusBarStyle = UIStatusBarStyleBlackTranslucent;
 		self.navigationController.navigationBar.barStyle = UIBarStyleBlackTranslucent;
@@ -270,7 +270,7 @@
 }//lx
 
 - (IBAction)submitButtonTapped:(id)sender {
-	self.scrollView.contentSize = CGSizeMake(320, 1100);
+	self.scrollView.contentSize = CGSizeMake(320, confirmlabel.frame.origin.y+44);
 	//NSString *selectedMemberName = @"Man";
 	NSString *selectedMemberName = [[namePicker delegate] pickerView:namePicker titleForRow:[namePicker selectedRowInComponent:0] forComponent:0];
 	
@@ -481,6 +481,8 @@
 }
 //confirmno
 - (IBAction)confirmnoButtonTapped:(id)sender{
+	
+	self.scrollView.contentSize = CGSizeMake(320, 560);
 	userinfoid.enabled = YES;
 	userinfoid.textColor = [UIColor whiteColor];
 	reuserinfoid.enabled = YES;
@@ -627,6 +629,8 @@
 - (void)loadUserSettings {
 	
 	namePicker.hidden = YES;
+	rehouseholdID.frame = CGRectMake(8, householdID.frame.origin.y+38, householdID.frame.size.width, householdID.frame.size.height);//lx 0414
+	
 	q2.frame = CGRectMake(8, rehouseholdID.frame.origin.y+52, 568, 44);
 	
 	initialinfo.frame = CGRectMake(8, q2.frame.origin.y+38, 568, 30 );
@@ -670,6 +674,8 @@
 	userinfoid.enabled = NO;
 	userinfoid.textColor = [UIColor grayColor];
 	
+	UserIDverify.hidden = YES;//lx 0414
+
 	reuserinfoid.enabled = NO;
 	reuserinfoid.textColor = [UIColor grayColor];
 	
@@ -706,7 +712,7 @@
 	[studentSegment setSelectedSegmentIndex:[[user isAStudent]intValue]];
 	
 	[workTripNumber setText:[[user numWorkTrips] stringValue]];
-	q1.text=@"1.The UserID assigned to you";
+	q1.text=@"1.The UserID assigned to you(internal ID, no need to change)";
 	householdID.text= user.userid;
 	rehouseholdID.text= user.userid;	//lx
 	userinfoid.text=user.userid;

@@ -475,26 +475,25 @@
 	}
 	if([[trip isMembers]intValue]==0){
 		[householdmembersSegment setSelectedSegmentIndex:1];//lx 0405
+		[DataTable setHidden:YES];//lx 0405
+		
 	}else if([[trip isMembers]intValue]==1){
 		
 		[householdmembersSegment setSelectedSegmentIndex:0];
+		[DataTable setHidden:NO];//lx 0405
+
 	
 	}else {
 		[householdmembersSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
+		[DataTable setHidden:YES];//lx 0405
 	}
 	
 //	[householdmembersSegment setSelectedSegmentIndex:[[trip isMembers] intValue]];
 	if([trip.isMembers intValue]<=0){
 		numofhousholdMemberselected=0;
 	}
-	else
-		numofhousholdMemberselected=[trip.members intValue];
 	
-	if([trip.members intValue]<=0){
-		numofhousholdMemberselected=0;
-	}
-	else
-		numofhousholdMemberselected=[trip.members intValue];
+	
 	
 	if([trip.nonMembers intValue] == 0 ){
 		[nonHouseholdmembersSegment setSelectedSegmentIndex:1];//lx 0405
@@ -536,15 +535,19 @@
 	NSLog(@"nonHouseholdMembers.text is %@",nonHouseholdMembers.text);
 	
 	
-	if ([[trip driverType] compare:@"Driver"] == NSOrderedSame) {
+	NSLog(@"[[trip driverType] intValue]%@",[trip driverType]);
+	if ([[trip driverType] isEqualToString:@"Driver"]) {
 		[driverPassengerSegment setSelectedSegmentIndex:0];
 	}else
 	{
-		if ([[trip driverType] compare:@"Passenger"] == NSOrderedSame) {
+		if ([[trip driverType] isEqualToString:@"Passenger"]) {
 			[driverPassengerSegment setSelectedSegmentIndex:1];
 		}else
 		{
 			[driverPassengerSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
+			if([trip.travelBy  isEqual: @"Car, truck or van"] || [trip.travelBy  isEqual: @"Motorcycle/Moped"]){
+				[driverPassengerSegment setEnabled:YES];
+			}else [driverPassengerSegment setEnabled:NO];
 		}
 	}
 	
@@ -557,6 +560,9 @@
 		
 	}else {
 		[tollSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
+		if([trip.travelBy  isEqual: @"Walked"] || [trip.travelBy  isEqual: @"Bicycle"]){
+			[tollSegment setEnabled:NO];
+		}
 	}
 
 
@@ -721,6 +727,7 @@
 						//for (int j = 0 ;j < dataArray1.count; j++){
 						if([[arrayFamilyMembersAdded objectAtIndex: i] caseInsensitiveCompare: [dataArray1 objectAtIndex:indexPath.row]] == NSOrderedSame){
 							NSLog(@"%@", [arrayFamilyMembersAdded objectAtIndex: i]);
+							numofhousholdMemberselected=numofhousholdMemberselected+1;
 							NSLog(@"%@",[dataArray1 objectAtIndex:indexPath.row]);
 							//[LIU0314] Add the async to UISwith, otherwise cannot turn it on.
 							dispatch_async(dispatch_get_main_queue(), ^{
@@ -948,7 +955,7 @@
 		tableheight=120;
 	}
 	else tableheight=40*[dataArray1 count];
-	DataTable = [[UITableView alloc] initWithFrame:CGRectMake(8, 690, 340,tableheight)];
+	DataTable = [[UITableView alloc] initWithFrame:CGRectMake(0, 690, [UIScreen mainScreen].bounds.size.width-10,tableheight)];
 	DataTable.tag = 803;
 	//[LIU0407]Disable the selection animation in tableview.
 	DataTable.allowsSelection = NO;
@@ -964,14 +971,14 @@
 	NSDateFormatter *dateFormat = [[NSDateFormatter alloc] init];
 	
 	//[LIU0408]Change picker view to table view
-	transportationTable = [[UITableView alloc] initWithFrame:CGRectMake(8, 200, 340, 360)];
+	transportationTable = [[UITableView alloc] initWithFrame:CGRectMake(0, 200, [UIScreen mainScreen].bounds.size.width-10, 360)];
 	[self.view addSubview:transportationTable];
 	[transportationTable setDelegate:self];
 	[transportationTable setDataSource:self];
 	transportationTable.tag = 801;
 	[transportationTable flashScrollIndicators];
 	
-	purposeTable = [[UITableView alloc] initWithFrame:CGRectMake(8, 1200, 340, 650)];
+	purposeTable = [[UITableView alloc] initWithFrame:CGRectMake(0, 1200, [UIScreen mainScreen].bounds.size.width-10, 650)];
 	[self.view addSubview:purposeTable];
 	[purposeTable setDelegate:self];
 	[purposeTable setDataSource:self];
@@ -1150,6 +1157,8 @@
 		 [nonHouseholdmembersSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
 		 [nonHouseholdmembersSegment setEnabled:YES];
 		 
+		 [DataTable setHidden:YES];
+		 
 		 //		 nonHouseholdMembers.text = @"0";
 		 if (row  == 6 || row == 7  ) {
 			 [driverPassengerSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
@@ -1178,26 +1187,30 @@
 	 }else{
 		 if (row  == 6 || row == 7 ) {
 			 if([[trip isMembers]intValue]==0){
-				 [householdmembersSegment setSelectedSegmentIndex:1];//lx 0405
+				 [householdmembersSegment setSelectedSegmentIndex:1];
+				 [DataTable setHidden:YES];//lx 0405
 				 
 			 }else if([[trip isMembers]intValue]==1){
 				 
 				 [householdmembersSegment setSelectedSegmentIndex:0];
+				 [DataTable setHidden:NO];//lx 0405
+
 				 
 			 }else{
 				 [householdmembersSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
+				 [DataTable setHidden:YES];//lx 0405
+
 			 }
 			 
 			 //			 [householdmembersSegment setSelectedSegmentIndex:[[trip isMembers] intValue]];
 			 
-			 if([[trip isnonMembers]intValue]==0){
+			 if([trip.nonMembers intValue] == 0 ){
 				 [nonHouseholdmembersSegment setSelectedSegmentIndex:1];//lx 0405
-				 
-			 }else if([[trip isnonMembers]intValue]==1){
+			 }else if([trip.nonMembers intValue] > 0){
 				 
 				 [nonHouseholdmembersSegment setSelectedSegmentIndex:0];
 				 
-			 }else{
+			 }else {
 				 [nonHouseholdmembersSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
 			 }
 			 
@@ -1213,25 +1226,26 @@
 			 if (row > 1 ) {
 				 if([[trip isMembers]intValue]==0){
 					 [householdmembersSegment setSelectedSegmentIndex:1];//lx 0405
-					 
+					 [DataTable setHidden:YES];//lx 0405
 				 }else if([[trip isMembers]intValue]==1){
 					 
 					 [householdmembersSegment setSelectedSegmentIndex:0];
+					 [DataTable setHidden:NO];//lx 0405
+
 					 
 				 }else{
 					 [householdmembersSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
+					 [DataTable setHidden:YES];//lx 0405
 				 }
 				 //				 [householdmembersSegment setSelectedSegmentIndex:[[trip isMembers] intValue]];
 				 
-				 
-				 if([[trip isnonMembers]intValue]==0){
+				 if([trip.nonMembers intValue] == 0 ){
 					 [nonHouseholdmembersSegment setSelectedSegmentIndex:1];//lx 0405
-					 
-				 }else if([[trip isnonMembers]intValue]==1){
+				 }else if([trip.nonMembers intValue] > 0){
 					 
 					 [nonHouseholdmembersSegment setSelectedSegmentIndex:0];
 					 
-				 }else{
+				 }else {
 					 [nonHouseholdmembersSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
 				 }
 				 
@@ -1259,34 +1273,37 @@
 			 else {
 				 if([[trip isMembers]intValue]==0){
 					 [householdmembersSegment setSelectedSegmentIndex:1];//lx 0405
+					 [DataTable setHidden:YES];//lx 0405
 					 
 				 }else if([[trip isMembers]intValue]==1){
 					 
 					 [householdmembersSegment setSelectedSegmentIndex:0];
+					 [DataTable setHidden:NO];//lx 0405
+
 					 
 				 }else{
 					 [householdmembersSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
+					 [DataTable setHidden:YES];//lx 0405
 				 }
 				 //				 [householdmembersSegment setSelectedSegmentIndex:[[trip isMembers] intValue]];
 				 
-				 if([[trip isnonMembers]intValue]==0){
+				 if([trip.nonMembers intValue] == 0 ){
 					 [nonHouseholdmembersSegment setSelectedSegmentIndex:1];//lx 0405
-					 
-				 }else if([[trip isnonMembers]intValue]==1){
+				 }else if([trip.nonMembers intValue] > 0){
 					 
 					 [nonHouseholdmembersSegment setSelectedSegmentIndex:0];
 					 
-				 }else{
+				 }else {
 					 [nonHouseholdmembersSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
 				 }
 				 
 				 //				 [nonHouseholdmembersSegment setSelectedSegmentIndex:[[trip isnonMembers] intValue]];
 				 //driverType
-				 if ([[trip driverType] compare:@"Driver"] == NSOrderedSame) {
+				 if ([[trip driverType] isEqualToString:@"Driver"]) {
 					 [driverPassengerSegment setSelectedSegmentIndex:0];
 				 }else
 				 {
-					 if ([[trip driverType] compare:@"Passenger"] == NSOrderedSame) {
+					 if ([[trip driverType] isEqualToString:@"Passenger"]) {
 						 [driverPassengerSegment setSelectedSegmentIndex:1];
 					 }else
 					 {
@@ -1358,25 +1375,28 @@
 		 if (row  == 7 || row == 8 ) {
 			 if([[trip isMembers]intValue]==0){
 				 [householdmembersSegment setSelectedSegmentIndex:1];//lx 0405
+				 [DataTable setHidden:YES];//lx 0405
 				
 			 }else if([[trip isMembers]intValue]==1){
 				 
 				 [householdmembersSegment setSelectedSegmentIndex:0];
+				 [DataTable setHidden:NO];//lx 0405
+
 				
 			 }else{
 				 [householdmembersSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
+				 [DataTable setHidden:YES];//lx 0405
 			 }
 			 
 //			 [householdmembersSegment setSelectedSegmentIndex:[[trip isMembers] intValue]];
 			 
-			 if([[trip isnonMembers]intValue]==0){
+			 if([trip.nonMembers intValue] == 0 ){
 				 [nonHouseholdmembersSegment setSelectedSegmentIndex:1];//lx 0405
-				 
-			 }else if([[trip isnonMembers]intValue]==1){
+			 }else if([trip.nonMembers intValue] > 0){
 				 
 				 [nonHouseholdmembersSegment setSelectedSegmentIndex:0];
 				 
-			 }else{
+			 }else {
 				 [nonHouseholdmembersSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
 			 }
 
@@ -1392,25 +1412,28 @@
 			 if (row > 2 ) {
 				 if([[trip isMembers]intValue]==0){
 					 [householdmembersSegment setSelectedSegmentIndex:1];//lx 0405
+					 [DataTable setHidden:YES];//lx 0405
 					 
 				 }else if([[trip isMembers]intValue]==1){
 					 
 					 [householdmembersSegment setSelectedSegmentIndex:0];
+					 [DataTable setHidden:NO];//lx 0405
+
 					 
 				 }else{
 					 [householdmembersSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
+					 [DataTable setHidden:YES];//lx 0405
 				 }
 //				 [householdmembersSegment setSelectedSegmentIndex:[[trip isMembers] intValue]];
 				 
 				 
-				 if([[trip isnonMembers]intValue]==0){
+				 if([trip.nonMembers intValue] == 0 ){
 					 [nonHouseholdmembersSegment setSelectedSegmentIndex:1];//lx 0405
-					 
-				 }else if([[trip isnonMembers]intValue]==1){
+				 }else if([trip.nonMembers intValue] > 0){
 					 
 					 [nonHouseholdmembersSegment setSelectedSegmentIndex:0];
 					 
-				 }else{
+				 }else {
 					 [nonHouseholdmembersSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
 				 }
 				 
@@ -1438,34 +1461,37 @@
 			 else {
 				 if([[trip isMembers]intValue]==0){
 					 [householdmembersSegment setSelectedSegmentIndex:1];//lx 0405
+					 [DataTable setHidden:YES];//lx 0405
 					 
 				 }else if([[trip isMembers]intValue]==1){
 					 
 					 [householdmembersSegment setSelectedSegmentIndex:0];
+					 [DataTable setHidden:NO];//lx 0405
+
 					 
 				 }else{
 					 [householdmembersSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
+					 [DataTable setHidden:YES];//lx 0405
 				 }
 //				 [householdmembersSegment setSelectedSegmentIndex:[[trip isMembers] intValue]];
 				 
-				 if([[trip isnonMembers]intValue]==0){
+				 if([trip.nonMembers intValue] == 0 ){
 					 [nonHouseholdmembersSegment setSelectedSegmentIndex:1];//lx 0405
-					 
-				 }else if([[trip isnonMembers]intValue]==1){
+				 }else if([trip.nonMembers intValue] > 0){
 					 
 					 [nonHouseholdmembersSegment setSelectedSegmentIndex:0];
 					 
-				 }else{
+				 }else {
 					 [nonHouseholdmembersSegment setSelectedSegmentIndex:UISegmentedControlNoSegment];
 				 }
 				 
 //				 [nonHouseholdmembersSegment setSelectedSegmentIndex:[[trip isnonMembers] intValue]];
 				 //driverType
-				 if ([[trip driverType] compare:@"Driver"] == NSOrderedSame) {
+				 if ([[trip driverType] isEqualToString:@"Driver"]) {
 					 [driverPassengerSegment setSelectedSegmentIndex:0];
 				 }else
 				 {
-					 if ([[trip driverType] compare:@"Passenger"] == NSOrderedSame) {
+					 if ([[trip driverType] isEqualToString:@"Passenger"]) {
 						 [driverPassengerSegment setSelectedSegmentIndex:1];
 					 }else
 					 {

@@ -82,6 +82,8 @@
 - (void)initTripManager:(TripManager*)manager;//lx
 - (BOOL)connected;
 
+//[LIU0414] add the refresh flag, only refresh at the first time
+@property BOOL refreshFlag;
 
 // DEPRECATED
 - (id)initWithManagedObjectContext:(NSManagedObjectContext*)context;

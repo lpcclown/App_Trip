@@ -52,6 +52,7 @@ LoadingView *loading;
 @property (weak, nonatomic) IBOutlet UISegmentedControl *driverlicense;
 @property (strong, nonatomic) NSString *deviceNum;
 
+@property (weak, nonatomic) IBOutlet UILabel *UserIDverify;//lx 0414
 @property (weak, nonatomic) IBOutlet UILabel *q1;
 @property (weak, nonatomic) IBOutlet UILabel *q2;
 @property (weak, nonatomic) IBOutlet UILabel *q3;

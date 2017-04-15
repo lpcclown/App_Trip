@@ -93,7 +93,7 @@
 @synthesize delegate, managedObjectContext;
 @synthesize trips, tripManager, selectedTrip, postVars,responseDict;
 @synthesize managedContext,labelView,firstTimeLoad,countNewTrips;//lx
-
+@synthesize refreshFlag; //[LIU0414]
 
 - (id)initWithManagedObjectContext:(NSManagedObjectContext*)context
 {
@@ -184,7 +184,7 @@
 			[newTrip setValue:[NSDate date] forKey:@"uploaded"];
 			[newTrip setValue:[singleTripInfo objectForKey:@"fare"] forKey:@"fare"];
 			[newTrip setValue:[singleTripInfo objectForKey:@"delays"] forKey:@"delays"];
-			[newTrip setValue:[singleTripInfo objectForKey:@"members"] forKey:@"members"];
+			[newTrip setValue:[singleTripInfo objectForKey:@"members"] forKey:@"isMembers"];
 			[newTrip setValue:[singleTripInfo objectForKey:@"nonmembers"] forKey:@"nonMembers"];
 			[newTrip setValue:[singleTripInfo objectForKey:@"payForParking"] forKey:@"payForParking"];
 			[newTrip setValue:[singleTripInfo objectForKey:@"toll"] forKey:@"toll"];
@@ -192,6 +192,8 @@
 			[newTrip setValue:[singleTripInfo objectForKey:@"tollAmt"] forKey:@"tollAmt"];
 			[newTrip setValue:[singleTripInfo objectForKey:@"travelBy"] forKey:@"travelBy"];
 			[newTrip setValue:[dateFormat dateFromString:[singleTripInfo objectForKey:@"stopTime"]] forKey:@"stopTime"];
+			
+			[newTrip setValue:[singleTripInfo objectForKey:@"membersDetail"] forKey:@"familyMembers"];
 			
 			NSArray *coords =[singleTripInfo objectForKey:@"coords"];
 			//NSLog(@"Coords is ............................................%@",coords);
@@ -321,7 +323,7 @@
 	NSLog(@"components is ----%@, and NSCalendarUnitHour %zi", components,NSCalendarUnitDay);
 	NSDate *todayDate = [calendar dateFromComponents:components];//fix 04:00:00
 	
-
+	
 	NSLog(@"todayDate is ----%@", todayDate);
 	request.predicate = [NSPredicate predicateWithFormat:@"startTime >= %@", todayDate];
 	NSInteger countTodayTrip = [tripManager.managedObjectContext countForFetchRequest:request error:&error];
@@ -337,9 +339,9 @@
 	[headerButton setTitle:@"   START/CONTINUE RECORDING" forState:UIControlStateNormal];
 	[headerButton setBackgroundImage:[[UIImage imageNamed:@"start_button.png"] resizableImageWithCapInsets:UIEdgeInsetsMake(48,20,48,20) resizingMode:UIImageResizingModeStretch] forState:UIControlStateNormal];
 	
-	headerButton.titleLabel.font = [UIFont fontWithName:@"Helvetica-Bold" size:15];
+	headerButton.titleLabel.font = [UIFont fontWithName:@"Helvetica-Bold" size:16];
 	[headerButton addTarget:self action:@selector(record:) forControlEvents:UIControlEventTouchUpInside];
-
+	
 	
 	[self.tableView reloadData];
 	
@@ -351,12 +353,12 @@
 	labelView = [[UILabel alloc] initWithFrame:CGRectMake(15, 50, self.view.bounds.size.width-20, 90)];
 	//UILabel *labelView = [[UILabel alloc] init];
 	labelView.numberOfLines = 0;
-//	labelView.text = [NSString stringWithFormat:@"Here are %ld trips loaded to local. %ld of them are pending to add detailed information. Latest refresh request gets %d new trips.", countAllLocalTrip ,countPendingLocalTrip,
-//					  (int)countNewTrips];
+	//	labelView.text = [NSString stringWithFormat:@"Here are %ld trips loaded to local. %ld of them are pending to add detailed information. Latest refresh request gets %d new trips.", countAllLocalTrip ,countPendingLocalTrip,
+	//					  (int)countNewTrips];
 	//[LIU0402]modify the warning message
 	labelView.text = [NSString stringWithFormat:@"We have identified %ld trips you might have made today. Please review each trip and confirm if you made the trip. If you did, please be sure to click the  “Provide Details”  button to answer the questions about the trip.", countTodayTrip];
 	labelView.font =[UIFont fontWithName:@"Helvetica-Bold" size:13];//lx 0405
-	labelView.textColor = [UIColor colorWithRed:(188/255.f) green:(188/255.f) blue:(188/255.f) alpha:1.0];
+	labelView.textColor = [UIColor whiteColor];
 	[headerView addSubview:labelView];
 	[headerView addSubview:headerButton];
 	self.tableView.tableHeaderView = headerView;
@@ -388,7 +390,7 @@
    break;
   default:
   {}
-
+			
    
 	}
 	
@@ -397,18 +399,30 @@
 	//[LIU] used when having multiple section in tableview
 	id  sectionInfo = [self.fetchedResultsController.sections objectAtIndex:section];
 	return [sectionInfo name];
+	return [sectionInfo objectAtIndex:section];
 }
+
 //[LIU0325] add sections into tableview
 -(NSInteger)numberOfSectionsInTableView:(UITableView *)tableView {
 	// Return the number of sections.
 	return [[[self tripSectionShow] sections] count];
 }
+- (void)tableView:(UITableView *)tableView willDisplayHeaderView:(UIView *)view forSection:(NSInteger)section
+{
+	// 设置section背景颜色
+	view.tintColor = [UIColor groupTableViewBackgroundColor];
+	
+	// 设置section字体颜色
+	UITableViewHeaderFooterView *header = (UITableViewHeaderFooterView *)view;
+	[header.textLabel setTextColor:[UIColor blackColor]];
+	header.textLabel.font=[UIFont fontWithName:@"Helvetica-Bold" size:16];
+}
 
 - (NSFetchedResultsController *) tripSectionShow
 {
-//	if (_fetchedResultsController != nil) {
-//		return _fetchedResultsController;
-//	}
+	//	if (_fetchedResultsController != nil) {
+	//		return _fetchedResultsController;
+	//	}
 	
 	NSFetchRequest *fetchRequest = [NSFetchRequest fetchRequestWithEntityName:@"Trip"];
 	
@@ -436,6 +450,7 @@
 		// abort() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
 		NSLog(@"Unresolved error %@, %@", error, [error userInfo]);
 		abort();
+		
 	}
 	
 	return _fetchedResultsController;
@@ -456,7 +471,7 @@
 {
 	[super viewDidLoad];
 	//self.navigationItem.prompt = @" ";
-
+	
 	self.tableView.rowHeight = kRowHeight;
 	self.tableView.backgroundView= nil;
 	self.tableView.backgroundColor= [UIColor blackColor];
@@ -482,6 +497,7 @@
 	// no trip selection by default
 	selectedTrip = nil;
 	//firstTimeLoad = YES;
+	refreshFlag = NO;
 }
 
 
@@ -501,22 +517,27 @@
 																forKey:NSForegroundColorAttributeName];
 	NSAttributedString *attributedTitle = [[NSAttributedString alloc] initWithString:title attributes:attrsDictionary];
 	self.refreshControl.attributedTitle = attributedTitle;
-
+	
 	if (![self connected]) {
 		NSLog(@"%@",@"no internet connection");
 		// Not connected
 	}
 	else {
+		//[LIU0414] Disable the refresh table function when page load as user requested.
 		//[LIU] below lines are used to refresh table and showing refresh effect when viewWillAppear
-		self.tableView.contentOffset = CGPointMake(0, -self.refreshControl.frame.size.height);
-		[self.refreshControl beginRefreshing];
-		dispatch_async(dispatch_get_main_queue(), ^{
-			
-			[self refreshTableView];
-			
-		});
+		if(refreshFlag == NO){
+			self.tableView.contentOffset = CGPointMake(0, -self.refreshControl.frame.size.height);
+			[self.refreshControl beginRefreshing];
+			dispatch_async(dispatch_get_main_queue(), ^{
+				
+				[self refreshTableView];
+				
+				refreshFlag = YES;
+				
+			});
+		}
 	}
-
+	
 }
 
 - (void)viewDidDisappear:(BOOL)animated
@@ -601,6 +622,7 @@
 	//[LIU0325] multiple section
 	id <NSFetchedResultsSectionInfo> sectionInfo = [self.fetchedResultsController sections][section];
 	return [sectionInfo numberOfObjects];
+	
 }
 
 - (TripCell *)getCellWithReuseIdentifier:(NSString *)reuseIdentifier
@@ -611,6 +633,7 @@
 		cell = [[TripCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:reuseIdentifier];
 		[cell setBackgroundColor:[UIColor blackColor]];
 		cell.textLabel.textColor=[UIColor whiteColor];
+		cell.textLabel.font=[UIFont fontWithName:@"Arial" size:16];
 		cell.detailTextLabel.textColor= [UIColor whiteColor];
 		cell.detailTextLabel.numberOfLines = 2;
 		if ( [reuseIdentifier  isEqual: kCellReuseIdentifierExclamation] )
@@ -647,8 +670,8 @@
 		[dateFormatter setDateStyle:NSDateFormatterMediumStyle];
 	}
 	Trip *trip;
-
-
+	
+	
 	long x = 0;
 	
 	for (int a = 0 ; a < indexPath.section; a++){
@@ -731,6 +754,7 @@
 		
 		cell.detailTextLabel.text = [NSString stringWithFormat:@"%@\n(With added detail info.)",
 									 [dateFormatter stringFromDate:[trip startTime]]];
+		
 		tripStatus = @"(With added detail info.)";
 	}
 	
@@ -741,29 +765,30 @@
 		//cell = [tableView dequeueReusableCellWithIdentifier:@"Trip" forIndexPath:indexPath];
 		cell.detailTextLabel.text = [NSString stringWithFormat:@"%@\n(Without added detail info.)",
 									 [dateFormatter stringFromDate:[trip startTime]]];
+		
 		tripStatus = @"(Without added detail info.)";
 	}
 	
 	// recording for this trip is still in progress (or just completed)
 	// NOTE: this test may break when attempting re-upload
 	//[LIU] no in progress trip
-//	else if ( trip == recordingInProgress )
-//	{
-//		cell = [self getCellWithReuseIdentifier:kCellReuseIdentifierInProgress];
-//		/*
-//		 cell.detailTextLabel.text = [NSString stringWithFormat:@"%@\n(recording in progress)",
-//		 [dateFormatter stringFromDate:[trip start]]];
-//		 */
-//		[cell setDetail:[NSString stringWithFormat:@"%@\n(recording in progress)", [dateFormatter stringFromDate:[trip startTime]]]];
-//		tripStatus = @"(recording in progress)";
-//	}
-//	
-//	// this trip was orphaned (an abandoned previous recording)
-//	else
-//	{
-//		cell = [self getCellWithReuseIdentifier:kCellReuseIdentifierExclamation];
-//		tripStatus = @"(recording interrupted)";
-//	}
+	//	else if ( trip == recordingInProgress )
+	//	{
+	//		cell = [self getCellWithReuseIdentifier:kCellReuseIdentifierInProgress];
+	//		/*
+	//		 cell.detailTextLabel.text = [NSString stringWithFormat:@"%@\n(recording in progress)",
+	//		 [dateFormatter stringFromDate:[trip start]]];
+	//		 */
+	//		[cell setDetail:[NSString stringWithFormat:@"%@\n(recording in progress)", [dateFormatter stringFromDate:[trip startTime]]]];
+	//		tripStatus = @"(recording in progress)";
+	//	}
+	//
+	//	// this trip was orphaned (an abandoned previous recording)
+	//	else
+	//	{
+	//		cell = [self getCellWithReuseIdentifier:kCellReuseIdentifierExclamation];
+	//		tripStatus = @"(recording interrupted)";
+	//	}
 	
 	/*
 	 cell.textLabel.text = [NSString stringWithFormat:@"%@ (%.0fm, %.fs)",
@@ -789,6 +814,9 @@
 	NSDate *outputDate = [[NSDate alloc] initWithTimeInterval:(NSTimeInterval)[trip.duration doubleValue]
 													sinceDate:fauxDate];
 	
+	NSTimeInterval duration = [[trip stopTime]timeIntervalSinceDate:[trip startTime]];
+	NSNumber *minutes =[NSNumber numberWithDouble:duration];
+	NSLog(@"duration is -----%.0fs",duration);
 	double mph = ( [trip.distance doubleValue] / 1609.344 ) / ( [trip.duration doubleValue] / 3600. );
 	/*
 	 cell.textLabel	= [NSString stringWithFormat:@"%.1f mi ~ %.1f mph ~ %@",
@@ -799,14 +827,17 @@
 	 */
 	cell.textLabel.text			= [dateFormatter stringFromDate:[trip startTime]];
 	//[LIU0313]
-//	cell.detailTextLabel.text	= [NSString stringWithFormat:@"%@: %.1f mi ~ %.1f mph\nelapsed time: %@",
-//								   trip.purpose,
-//								   [trip.distance doubleValue] / 1609.344,
-//								   mph,
-//								   [inputFormatter stringFromDate:outputDate]
-//								   ];
-	cell.detailTextLabel.text	= [NSString stringWithFormat:@"%@",trip.purpose];
-	
+	//	cell.detailTextLabel.text	= [NSString stringWithFormat:@"%@: %.1f mi ~ %.1f mph\nelapsed time: %@",
+	//								   trip.purpose,
+	//								   [trip.distance doubleValue] / 1609.344,
+	//								   mph,
+	//								   [inputFormatter stringFromDate:outputDate]
+	//								   ];
+	if (trip.purpose.length != 0) {
+		cell.detailTextLabel.text	= [NSString stringWithFormat:@"%@\n%.2lf minutes.",trip.purpose, [minutes doubleValue]/60];
+		cell.detailTextLabel.lineBreakMode = UILineBreakModeWordWrap;
+		cell.detailTextLabel.numberOfLines = 0;
+	}else cell.detailTextLabel.text	= [NSString stringWithFormat:@"%@",trip.purpose];
 	//[LIU0325]
 	[self configureCell:cell atIndexPath:indexPath];
 	return cell;
@@ -1085,12 +1116,12 @@
 			}
 		}
 			break;
-		//lx set for pending trip alert
+			//lx set for pending trip alert
 		case 0:
 		{
 			break;
 		}
-		//*lx
+			//*lx
 		default:
 		{
 			//NSLog(@"SavedTripsView alertView: didDismissWithButtonIndex: %d", buttonIndex);

@@ -373,12 +373,12 @@
 - (void)viewDidLoad
 {
     [super viewDidLoad];
-	
-
-		[UIApplication sharedApplication].statusBarStyle = UIStatusBarStyleBlackTranslucent;
-		self.navigationController.navigationBar.barStyle = UIBarStyleBlackTranslucent;
-
+	[UIApplication sharedApplication].statusBarStyle = UIStatusBarStyleBlackTranslucent;
+	self.navigationController.navigationBar.barStyle = UIBarStyleBlackTranslucent;
+	if (!recording){
 		[startButton setBackgroundImage:[[UIImage imageNamed:@"start_button.png"] resizableImageWithCapInsets:UIEdgeInsetsMake(48,20,48,20) resizingMode: UIImageResizingModeStretch] forState:UIControlStateNormal];
+		//self.recording = NO;
+	}
 	//[LIU]no need cancel button anymore, dummy coords will be filtered out by server's model
 	//[cancelButton setBackgroundImage:[[UIImage imageNamed:@"cancel_button.png"] resizableImageWithCapInsets:UIEdgeInsetsMake(48,20,48,20) resizingMode: UIImageResizingModeStretch] forState:UIControlStateNormal];
 		
@@ -386,7 +386,7 @@
 		MKCoordinateRegion region = { { 37.7620, -122.4350 }, { 0.10825, 0.10825 } };
 		[mapView setRegion:region animated:NO];
 		
-		self.recording = NO;
+	
 		self.shouldUpdateCounter = NO;
 		
 		// Start the location manager.
@@ -633,6 +633,9 @@
 	[self resetTimer];
 	[self resetCounter];
 	self.recording = NO;
+	//[LIU0414] transform start button into save button
+	[startButton setTitle:@"START RECORDING" forState:UIControlStateNormal];
+	[startButton setBackgroundImage:[[UIImage imageNamed:@"start_button"] resizableImageWithCapInsets:UIEdgeInsetsMake(48,20,48,20) resizingMode: UIImageResizingModeStretch] forState:UIControlStateNormal];
 }
 
 //[LIU0326] Request finished trip after click finish button
@@ -756,87 +759,91 @@
 	// [LIU] no need only one finish button in this view
 }
 
+- (void)startButtonFunc{
+	
+	if (!recording){
+		NSLog(@"start - recording=%d", recording);
+		
+		// if the battery level is low then NM
+		//if ([self batteryLevelLowStartPressed:TRUE])
+		//   return;
+		
+		
+		// start the timer if needed
+		if ( timer == nil )
+		{
+			NSDictionary* counterUserDict;
+			// check if we're continuing a trip - then start the trip from there
+			if ( tripManager.trip && tripManager.trip.startTime && [tripManager.trip.coords count] )
+			{
+				counterUserDict = [NSDictionary dictionaryWithObjectsAndKeys:tripManager.trip.startTime, @"StartDate",
+								   tripManager, @"TripManager", nil ];
+			}
+			// or starting a new recording
+			else {
+				[self resetCounter];
+				counterUserDict = [NSDictionary dictionaryWithObjectsAndKeys:[NSDate date], @"StartDate",
+								   tripManager, @"TripManager", nil ];
+			}
+			timer = [NSTimer scheduledTimerWithTimeInterval:kCounterTimeInterval
+													 target:self selector:@selector(updateCounter:)
+												   userInfo:counterUserDict
+													repeats:YES];
+		}
+		
+		// init reminder manager
+		reminderManager = [[ReminderManager alloc] init];
+		
+		//[LIU0330] start button grey out until 18 hours.
+		startButton.enabled = NO;
+		startButton.alpha = 0.5;
+		
+		//[LIU0331] set disable state of the save button
+		[startButton setTitle:@"END RECORDING" forState:UIControlStateDisabled];
+		[startButton setBackgroundImage:[[UIImage imageNamed:@"savegrey_button.png"] resizableImageWithCapInsets:UIEdgeInsetsMake(48,20,48,20) resizingMode: UIImageResizingModeStretch] forState:UIControlStateDisabled];
+		
+		//[LIU] adjust finish button width
+		//startButton.frame = CGRectMake( 18.0, 159.0, 386, kCustomButtonHeight );
+		
+		
+		
+		// Start the location manager.
+		// [LIU0314]
+		[locationManager setDelegate:self];
+		// [LIU0404] clear all the annoatations on the map.
+		[mapView removeAnnotations:mapView.annotations];
+		
+		[[self getLocationManager] startUpdatingLocation];
+		
+		// set recording flag so future location updates will be added as coords
+		recording = YES;
+		
+		// add the last location we know about to start
+		if (lastLocation) {
+			NSLog(@"tripManager = %@", tripManager);
+			CLLocationDistance distance = [tripManager addCoord:lastLocation];
+			self.distCounter.text = [NSString stringWithFormat:@"%.1f mi", distance / 1609.344];
+			lastLocation = nil;
+		}
+		
+		// set flag to update counter
+		shouldUpdateCounter = YES;
+	}
+}
+
 // handle start button action
 - (IBAction)start:(UIButton *)sender
 {
-	NSLog(@"start - recording=%d", recording);
-    
-    // just one button - we really want to save
-    if (recording) {
+	// just one button - we really want to save
+	if (recording) {
 		//[LIU0314] Disable previous running reminder
 		if ( reminderManager )
 			[reminderManager disableReminders];
-        [self save:sender];
-        return;
-    }
-	
-    // if the battery level is low then NM
-    //if ([self batteryLevelLowStartPressed:TRUE])
-	//   return;
-	
-        
-	// start the timer if needed
-	if ( timer == nil )
-	{
-        NSDictionary* counterUserDict;
-		// check if we're continuing a trip - then start the trip from there
-		if ( tripManager.trip && tripManager.trip.startTime && [tripManager.trip.coords count] )
-		{
-            counterUserDict = [NSDictionary dictionaryWithObjectsAndKeys:tripManager.trip.startTime, @"StartDate",
-                                                                         tripManager, @"TripManager", nil ];
-        }
-        // or starting a new recording
-        else {
-			[self resetCounter];
-            counterUserDict = [NSDictionary dictionaryWithObjectsAndKeys:[NSDate date], @"StartDate",
-                                                                         tripManager, @"TripManager", nil ];
-        }
-        timer = [NSTimer scheduledTimerWithTimeInterval:kCounterTimeInterval
-                                                 target:self selector:@selector(updateCounter:)
-                                                userInfo:counterUserDict
-                                                repeats:YES];
+		[self save:sender];
+		return;
 	}
-
-	// init reminder manager
-	reminderManager = [[ReminderManager alloc] init];
 	
-	//[LIU0330] start button grey out until 18 hours.
-	startButton.enabled = NO;
-	startButton.alpha = 0.5;
-	
-	// transform start button into save button
-    [startButton setTitle:@"END RECORDING" forState:UIControlStateNormal];
-    [startButton setBackgroundImage:[[UIImage imageNamed:@"save_button.png"] resizableImageWithCapInsets:UIEdgeInsetsMake(48,20,48,20) resizingMode: UIImageResizingModeStretch] forState:UIControlStateNormal];
-	//[LIU0331] set disable state of the save button
-	[startButton setTitle:@"END RECORDING" forState:UIControlStateDisabled];
-	[startButton setBackgroundImage:[[UIImage imageNamed:@"savegrey_button.png"] resizableImageWithCapInsets:UIEdgeInsetsMake(48,20,48,20) resizingMode: UIImageResizingModeStretch] forState:UIControlStateDisabled];
-	
-	//[LIU] adjust finish button width
-	//startButton.frame = CGRectMake( 18.0, 159.0, 386, kCustomButtonHeight );
-	
-
-	
-    // Start the location manager.
-	// [LIU0314]
-	[locationManager setDelegate:self];
-	// [LIU0404] clear all the annoatations on the map.
-	[mapView removeAnnotations:mapView.annotations];
-	
-	[[self getLocationManager] startUpdatingLocation];
-
-    // set recording flag so future location updates will be added as coords
-	recording = YES;
-	
-    // add the last location we know about to start
-    if (lastLocation) {
-        NSLog(@"tripManager = %@", tripManager);
-        CLLocationDistance distance = [tripManager addCoord:lastLocation];
-        self.distCounter.text = [NSString stringWithFormat:@"%.1f mi", distance / 1609.344];
-        lastLocation = nil;
-    }
-	
-	// set flag to update counter
-	shouldUpdateCounter = YES;
+	[self startButtonFunc];
 }
 
 
@@ -942,11 +949,9 @@
 {
     // listen for keyboard hide/show notifications so we can properly adjust the table's height
 	[super viewWillAppear:animated];
-	// [LIU] Added the function to auto run the start when page load trigger from SavedTrip page
-	if(recording == NO){
-		[self start:startButton];
-	}else{
-	
+	if(recording == YES){
+//		[self start:startButton];
+//	}else{
 		//[LIU0331]
 		NSFetchRequest *request = [[NSFetchRequest alloc] init];
 		FloridaTripTrackerAppDelegate *delegatea= [[UIApplication sharedApplication] delegate];
@@ -964,19 +969,32 @@
 		if ([coordLocalArray count] != 0){
 			CoordLocal *earliestLocalCoord = [coordLocalArray objectAtIndex:0];
 			NSTimeInterval distanceBetweenDates = [[NSDate date] timeIntervalSinceDate:earliestLocalCoord.recorded];
-			//[LIU0331] after 2 hours to enable
-			if(distanceBetweenDates>60 * 60 * 2){
-			//if(distanceBetweenDates>2){
+			//[LIU0414] after 18 hours to enable
+			if(distanceBetweenDates>60 * 60 * 18){
+			//if(distanceBetweenDates>1){
 				startButton.enabled = YES;
 				startButton.alpha = 1.0;
+				// transform start button into save button
+				[startButton setTitle:@"END RECORDING" forState:UIControlStateNormal];
+				[startButton setBackgroundImage:[[UIImage imageNamed:@"save_button.png"] resizableImageWithCapInsets:UIEdgeInsetsMake(48,20,48,20) resizingMode: UIImageResizingModeStretch] forState:UIControlStateNormal];
+			}
+			else{
+				//[LIU0330] start button grey out until 18 hours.
+				startButton.enabled = NO;
+				startButton.alpha = 0.5;
+				[startButton setTitle:@"END RECORDING" forState:UIControlStateDisabled];
+				[startButton setBackgroundImage:[[UIImage imageNamed:@"savegrey_button.png"] resizableImageWithCapInsets:UIEdgeInsetsMake(48,20,48,20) resizingMode: UIImageResizingModeStretch] forState:UIControlStateDisabled];
 			}
 		}
 		else{
 			//[LIU0330] start button grey out until 18 hours.
 			startButton.enabled = NO;
 			startButton.alpha = 0.5;
+			[startButton setTitle:@"END RECORDING" forState:UIControlStateDisabled];
+			[startButton setBackgroundImage:[[UIImage imageNamed:@"savegrey_button.png"] resizableImageWithCapInsets:UIEdgeInsetsMake(48,20,48,20) resizingMode: UIImageResizingModeStretch] forState:UIControlStateDisabled];
 		}
 	}
+	//}
 	// [LIU] disable the cancel button
 	cancelButton.hidden = TRUE;
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(keyboardWillShow:) name:UIKeyboardWillShowNotification object:nil];
@@ -1022,6 +1040,7 @@
     //self.coords = nil;
     self.locationManager = nil;
     self.startButton = nil;
+	//recording = NO;
 }
 
 

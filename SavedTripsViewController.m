@@ -466,8 +466,8 @@
 	//[LIU0414] change the logic, when click button in mytrips page, it trigger start, but wont trigger finish and tab to record page, wont trigger
 	//recording automatically
 	for (UIViewController* testViewController in self.tabBarController.viewControllers) {
-		if ([testViewController.childViewControllers.firstObject respondsToSelector:@selector(startButtonFunc)]) {
-			[(RecordTripViewController *)testViewController.childViewControllers.firstObject startButtonFunc];
+		if ([testViewController.childViewControllers.firstObject respondsToSelector:@selector(setToRecordFlag)]) {
+			[(RecordTripViewController *)testViewController.childViewControllers.firstObject setToRecordFlag];
 		}
 	}
 	[self.tabBarController setSelectedIndex:2];

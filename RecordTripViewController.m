@@ -62,7 +62,7 @@
 @synthesize startButton, cancelButton;
 @synthesize timer, timeCounter, distCounter;
 @synthesize recording, shouldUpdateCounter, userInfoSaved;
-
+@synthesize toRecord;
 
 #pragma mark CLLocationManagerDelegate methods
 
@@ -203,7 +203,7 @@
 		[mapView setCenterCoordinate:newLocation.coordinate animated:YES];
 	}
 
-	if ( recording )
+	if (recording)
 	{
 		// add to CoreData store
 		// [LIU]
@@ -222,6 +222,11 @@
 		[locations addObject:myAnn];
 		[mapView addAnnotations:locations];
 		
+		// 	double mph = ( [trip.distance doubleValue] / 1609.344 ) / ( [trip.duration doubleValue] / 3600. );
+		if ( newLocation.speed >= 0. )
+			speedCounter.text = [NSString stringWithFormat:@"%.1f mph", newLocation.speed * 3600 / 1609.344];
+		else
+			speedCounter.text = @"0.0 mph";
 		
 	} else {
         // save the location for when we do start
@@ -235,16 +240,6 @@
 			}
 		}
 	}
-	
-	// 	double mph = ( [trip.distance doubleValue] / 1609.344 ) / ( [trip.duration doubleValue] / 3600. );
-	if ( newLocation.speed >= 0. )
-		speedCounter.text = [NSString stringWithFormat:@"%.1f mph", newLocation.speed * 3600 / 1609.344];
-	else
-		speedCounter.text = @"0.0 mph";
-    
-    // check the battery level and stop recording if low
-	//[LIU0407]Disable battery check
-    //[self batteryLevelLowStartPressed:FALSE];
 }
 
 
@@ -465,35 +460,24 @@
  */
 - (void)alertView:(UIAlertView *)alertView didDismissWithButtonIndex:(NSInteger)buttonIndex
 {
-    if (alertView.tag == kResumeInterruptedRecording) {
-        //NSLog(@"recording interrupted didDismissWithButtonIndex: %d", buttonIndex);
-        if (buttonIndex == 0) {
-            // new trip => do nothing
-        }
-        else {
-					
-            // update UI to reflect trip once loading has completed
-            [self setCounterTimeSince:tripManager.trip.startTime distance:[tripManager getDistanceEstimate]];
-
-            startButton.enabled = YES;
-        }
-        return;
-    }
-    
+//    if (alertView.tag == kResumeInterruptedRecording) {
+//        //NSLog(@"recording interrupted didDismissWithButtonIndex: %d", buttonIndex);
+//        if (buttonIndex == 0) {
+//            // new trip => do nothing
+//        }
+//        else {
+//					
+//            // update UI to reflect trip once loading has completed
+//            [self setCounterTimeSince:tripManager.trip.startTime distance:[tripManager getDistanceEstimate]];
+//
+//            startButton.enabled = YES;
+//        }
+//        return;
+//    }
+	
     // go to the map view of the trip
     // not relevant if we weren't recording
-    if (alertView.tag != kBatteryLowNotRecording) {
-        //NSLog(@"saving didDismissWithButtonIndex: %d", buttonIndex);
-			
-        // keep a pointer to our trip to pass to map view below
-        Trip *trip = tripManager.trip;
-        [self resetRecordingInProgress];
-			
-        // load map view of saved trip
-		//[LIU0313]
-		//MapViewController *mvc = [[MapViewController alloc] initWithTrip:trip];
-        //[[self navigationController] pushViewController:mvc animated:YES];
-	}
+	[self resetRecordingInProgress];
 }
 
 + (NSArray *) obtainTripsArray:(NSInteger*) sendFlag{
@@ -552,6 +536,9 @@
 	// 3. obtain feedback;
 	// 4. empty local tabel
 	
+	// [LIU0404] clear all the annoatations on the map.
+	[mapView removeAnnotations:mapView.annotations];
+	
 	NSFetchRequest *request = [[NSFetchRequest alloc] init];
 	FloridaTripTrackerAppDelegate *delegate= [[UIApplication sharedApplication] delegate];
 	NSManagedObjectContext *managedContext = [delegate managedObjectContext];
@@ -560,7 +547,7 @@
 	NSEntityDescription *coordLocal = [NSEntityDescription entityForName:@"CoordLocal" inManagedObjectContext:managedContext];
 	[request setEntity:coordLocal];
 	NSInteger count = [managedContext countForFetchRequest:request error:nil];
-	NSLog(@"Total trips amount to be deleted  = %ld", count);
+	NSLog(@"Total local coords amount to be deleted  = %ld", count);
 	NSArray *coordInCoordLocal = [managedContext executeFetchRequest:request error:nil];
 	
 	NSArray *coordsArray = [RecordTripViewController obtainTripsArray:0];
@@ -628,7 +615,7 @@
 		[alert show];
 		
 	}
-	
+	[self resetRecordingInProgress];
 	//[LIU] Clear the time recording, need to check detail any impact
 	[self resetTimer];
 	[self resetCounter];
@@ -759,76 +746,70 @@
 	// [LIU] no need only one finish button in this view
 }
 
+- (void)setToRecordFlag{
+	toRecord = YES;
+}
+
 - (void)startButtonFunc{
 	
-	if (!recording){
-		NSLog(@"start - recording=%d", recording);
-		
-		// if the battery level is low then NM
-		//if ([self batteryLevelLowStartPressed:TRUE])
-		//   return;
-		
-		
-		// start the timer if needed
-		if ( timer == nil )
+	NSLog(@"start ------------------------------- recording");
+	
+	//[LIU0330] start button grey out until 18 hours.
+	startButton.enabled = NO;
+	startButton.alpha = 0.5;
+	
+	//[LIU0331] set disable state of the save button
+	[startButton setTitle:@"END RECORDING" forState:UIControlStateDisabled];
+	[startButton setBackgroundImage:[[UIImage imageNamed:@"savegrey_button.png"] resizableImageWithCapInsets:UIEdgeInsetsMake(48,20,48,20) resizingMode: UIImageResizingModeStretch] forState:UIControlStateDisabled];
+	
+	//[LIU] adjust finish button width
+	//startButton.frame = CGRectMake( 18.0, 159.0, 386, kCustomButtonHeight );
+	
+	// start the timer if needed
+	if ( timer == nil )
+	{
+		NSDictionary* counterUserDict;
+		// check if we're continuing a trip - then start the trip from there
+		if ( tripManager.trip && tripManager.trip.startTime && [tripManager.trip.coords count] )
 		{
-			NSDictionary* counterUserDict;
-			// check if we're continuing a trip - then start the trip from there
-			if ( tripManager.trip && tripManager.trip.startTime && [tripManager.trip.coords count] )
-			{
-				counterUserDict = [NSDictionary dictionaryWithObjectsAndKeys:tripManager.trip.startTime, @"StartDate",
-								   tripManager, @"TripManager", nil ];
-			}
-			// or starting a new recording
-			else {
-				[self resetCounter];
-				counterUserDict = [NSDictionary dictionaryWithObjectsAndKeys:[NSDate date], @"StartDate",
-								   tripManager, @"TripManager", nil ];
-			}
-			timer = [NSTimer scheduledTimerWithTimeInterval:kCounterTimeInterval
-													 target:self selector:@selector(updateCounter:)
-												   userInfo:counterUserDict
-													repeats:YES];
+			counterUserDict = [NSDictionary dictionaryWithObjectsAndKeys:tripManager.trip.startTime, @"StartDate",
+							   tripManager, @"TripManager", nil ];
 		}
-		
-		// init reminder manager
-		reminderManager = [[ReminderManager alloc] init];
-		
-		//[LIU0330] start button grey out until 18 hours.
-		startButton.enabled = NO;
-		startButton.alpha = 0.5;
-		
-		//[LIU0331] set disable state of the save button
-		[startButton setTitle:@"END RECORDING" forState:UIControlStateDisabled];
-		[startButton setBackgroundImage:[[UIImage imageNamed:@"savegrey_button.png"] resizableImageWithCapInsets:UIEdgeInsetsMake(48,20,48,20) resizingMode: UIImageResizingModeStretch] forState:UIControlStateDisabled];
-		
-		//[LIU] adjust finish button width
-		//startButton.frame = CGRectMake( 18.0, 159.0, 386, kCustomButtonHeight );
-		
-		
-		
-		// Start the location manager.
-		// [LIU0314]
-		[locationManager setDelegate:self];
-		// [LIU0404] clear all the annoatations on the map.
-		[mapView removeAnnotations:mapView.annotations];
-		
-		[[self getLocationManager] startUpdatingLocation];
-		
-		// set recording flag so future location updates will be added as coords
-		recording = YES;
-		
-		// add the last location we know about to start
-		if (lastLocation) {
-			NSLog(@"tripManager = %@", tripManager);
-			CLLocationDistance distance = [tripManager addCoord:lastLocation];
-			self.distCounter.text = [NSString stringWithFormat:@"%.1f mi", distance / 1609.344];
-			lastLocation = nil;
+		// or starting a new recording
+		else {
+			[self resetCounter];
+			counterUserDict = [NSDictionary dictionaryWithObjectsAndKeys:[NSDate date], @"StartDate",
+							   tripManager, @"TripManager", nil ];
 		}
-		
-		// set flag to update counter
-		shouldUpdateCounter = YES;
+		timer = [NSTimer scheduledTimerWithTimeInterval:kCounterTimeInterval
+												 target:self selector:@selector(updateCounter:)
+											   userInfo:counterUserDict
+												repeats:YES];
 	}
+	
+	// init reminder manager
+	reminderManager = [[ReminderManager alloc] init];
+	
+	// Start the location manager.
+	// [LIU0314]
+	[locationManager setDelegate:self];
+	
+	
+	[[self getLocationManager] startUpdatingLocation];
+	
+	// set recording flag so future location updates will be added as coords
+	recording = YES;
+	
+	// add the last location we know about to start
+	if (lastLocation) {
+		NSLog(@"tripManager = %@", tripManager);
+		CLLocationDistance distance = [tripManager addCoord:lastLocation];
+		self.distCounter.text = [NSString stringWithFormat:@"%.1f mi", distance / 1609.344];
+		lastLocation = nil;
+	}
+	
+	// set flag to update counter
+	shouldUpdateCounter = YES;
 }
 
 // handle start button action
@@ -947,12 +928,15 @@
 
 - (void)viewWillAppear:(BOOL)animated
 {
-    // listen for keyboard hide/show notifications so we can properly adjust the table's height
 	[super viewWillAppear:animated];
-	if(recording == YES){
-//		[self start:startButton];
-//	}else{
-		//[LIU0331]
+	if(toRecord == YES){
+		toRecord = NO;
+		if (recording == NO){
+			[self startButtonFunc];
+		}
+	}
+	if(recording == YES)
+	{
 		NSFetchRequest *request = [[NSFetchRequest alloc] init];
 		FloridaTripTrackerAppDelegate *delegatea= [[UIApplication sharedApplication] delegate];
 		NSManagedObjectContext *managedContext = [delegatea managedObjectContext];
@@ -993,8 +977,12 @@
 			[startButton setTitle:@"END RECORDING" forState:UIControlStateDisabled];
 			[startButton setBackgroundImage:[[UIImage imageNamed:@"savegrey_button.png"] resizableImageWithCapInsets:UIEdgeInsetsMake(48,20,48,20) resizingMode: UIImageResizingModeStretch] forState:UIControlStateDisabled];
 		}
+	}else{
+		[self resetCounter];
+		[self resetTimer];
+		speedCounter.text = @"0.0 mph";
 	}
-	//}
+	
 	// [LIU] disable the cancel button
 	cancelButton.hidden = TRUE;
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(keyboardWillShow:) name:UIKeyboardWillShowNotification object:nil];

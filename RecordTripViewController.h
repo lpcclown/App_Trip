@@ -97,6 +97,7 @@
 @property (weak) NSTimer *timer;
 
 @property (assign) BOOL recording;
+@property (assign) BOOL toRecord;
 @property (assign) BOOL shouldUpdateCounter;
 @property (assign) BOOL userInfoSaved;
 
@@ -122,6 +123,7 @@
 - (void)handleTermination;
 
 - (void)startButtonFunc;
+- (void)setToRecordFlag;
 
 //[LIU0326] obtain trip method will be used in perodical update alsos
 + (NSArray *) obtainTripsArray:(NSInteger *)sendFlag;

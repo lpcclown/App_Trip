@@ -105,6 +105,7 @@
 //*lx
 //[LIU]
 @property (nonatomic, strong) Trip *trip;
+@property (strong, nonatomic) NSString* userID;
 - (id)initWithTrip:(Trip *)tripFromMapView;
 
 

@@ -53,6 +53,7 @@
 @synthesize activityPickerViewDataSource;
 @synthesize housholdMemberselected,numofhousholdMemberselected,familyMember,cancel,cancelButton, startDatePicker, endDatePicker;
 //*lx
+@synthesize userID;
 
 
 // return the picker frame based on its size
@@ -347,6 +348,21 @@
 				
 				NSLog(@"Update Trip detailed info to DB failed.");
 				
+			}
+			
+			//[LIU0427] obtain the trip's date beginning and ending timestamp.
+			NSDateComponents *components = [[NSDateComponents alloc] init];
+			components.day = [[NSCalendar currentCalendar] ordinalityOfUnit:(NSCalendarUnitDay) inUnit:(NSCalendarUnitEra)
+																	forDate:[[NSCalendar currentCalendar] startOfDayForDate:trip.startTime]];
+			NSDate *dayBegin = [[NSCalendar currentCalendar] dateFromComponents:components];
+			components.day += 1;
+			NSDate *dayEnd = [[NSCalendar currentCalendar] dateFromComponents:components];
+			request.predicate = [NSPredicate predicateWithFormat:@"((startTime >= %@) AND (startTime <= %@) AND (purpose == %@))",
+								 dayBegin, dayEnd, @""];
+			NSInteger countTodayTrip = [managedContext countForFetchRequest:request error:nil];
+			//NSLog(@"%ld (long)countTodayTrip", (long)countTodayTrip );
+			if (countTodayTrip == 0){
+				[[UIApplication sharedApplication] openURL:[NSURL URLWithString: [NSString stringWithFormat:@"%@%@", KCertification, userID]]];
 			}
 		}
 	}
@@ -942,6 +958,7 @@
 	NSArray *userInUserTable = [managedContext executeFetchRequest:userRequest error:nil];
 	User *person= [userInUserTable objectAtIndex:0];
 	familyMember =person.familyMembers;
+	userID = person.userid;
 	NSArray * familyMembersload = [familyMember componentsSeparatedByString: @","];
 	//[LIU0402]add predicate to filter out the self member
 	NSArray * newFamilyMembersload = [familyMembersload filteredArrayUsingPredicate: [NSPredicate predicateWithFormat:@"NOT(SELF beginswith %@)", person.name]];

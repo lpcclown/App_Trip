@@ -545,6 +545,8 @@
 		}
 	}
 	
+	[self.tableView reloadData];
+	
 }
 
 - (void)viewDidDisappear:(BOOL)animated

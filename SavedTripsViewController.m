@@ -545,7 +545,7 @@
 		}
 	}
 	
-	[self.tableView reloadData];
+	[self refreshTableView];
 	
 }
 

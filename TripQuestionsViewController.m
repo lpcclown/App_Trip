@@ -154,7 +154,43 @@
 												  otherButtonTitles:nil];
 			[alert show];
 		}
+		//[LIU0531] Add new conditions check to force users fill out all the parts.
+		else if([householdmembersSegment selectedSegmentIndex] == -1){
+			UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"Please select were any household members with you on this trip."
+               message:nil
+														   delegate:self
+												  cancelButtonTitle:@"OK"
+												  otherButtonTitles:nil];
+			[alert show];
 		
+		}
+		else if([nonHouseholdmembersSegment selectedSegmentIndex] == -1){
+			UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"Please select were there other people (non-household member) with you on this trip."
+               message:nil
+														   delegate:self
+												  cancelButtonTitle:@"OK"
+												  otherButtonTitles:nil];
+			[alert show];
+		
+		}
+		else if(driverPassengerSegment.enabled == YES && [driverPassengerSegment selectedSegmentIndex] == -1){
+			UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"Please select were you the driver or passenger."
+               message:nil
+														   delegate:self
+												  cancelButtonTitle:@"OK"
+												  otherButtonTitles:nil];
+			[alert show];
+			
+		}
+		else if(tollSegment.enabled == YES && [tollSegment selectedSegmentIndex] == -1){
+			UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"Please select did you pay a toll as part of this trip."
+               message:nil
+														   delegate:self
+												  cancelButtonTitle:@"OK"
+												  otherButtonTitles:nil];
+			[alert show];
+			
+		}
 		//else if ([[activityPicker delegate] pickerView:activityPicker titleForRow:[activityPicker selectedRowInComponent:0] forComponent:0].length == 0){
 		else if(lastSelectedPurposeIndexPath == nil){
 			UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"Please select your PRIMARY activity."
